@@ -39,10 +39,6 @@ DECLARE_GLOBAL_DATA_PTR;
 
 static struct wd_timer *wdtimer = (struct wd_timer *)WDT_BASE;
 
-/* MII mode defines */
-#define MII_MODE_ENABLE		0x0
-#define RGMII_MODE_ENABLE	0x3A
-
 /* GPIO that controls power to DDR on EVM-SK */
 #define GPIO_DDR_VTT_EN		7
 
@@ -483,7 +479,7 @@ int board_eth_init(bd_t *bis)
 		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
 				PHY_INTERFACE_MODE_MII;
 	} else {
-		writel(RGMII_MODE_ENABLE, &cdev->miisel);
+		writel((RGMII_MODE_ENABLE | RGMII_INT_DELAY), &cdev->miisel);
 		cpsw_slaves[0].phy_if = cpsw_slaves[1].phy_if =
 				PHY_INTERFACE_MODE_RGMII;
 	}

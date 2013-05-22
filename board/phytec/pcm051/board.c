@@ -41,8 +41,6 @@ DECLARE_GLOBAL_DATA_PTR;
 static struct wd_timer *wdtimer = (struct wd_timer *)WDT_BASE;
 
 /* MII mode defines */
-#define MII_MODE_ENABLE		0x0
-#define RGMII_MODE_ENABLE	0xA
 #define RMII_RGMII2_MODE_ENABLE	0x49
 
 static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
