@@ -145,7 +145,7 @@ int arch_misc_init(void)
 }
 
 #ifdef CONFIG_SPL_BUILD
-void rtc32k_enable(void)
+static void rtc32k_enable(void)
 {
 	struct rtc_regs *rtc = (struct rtc_regs *)RTC_BASE;
 
@@ -161,11 +161,7 @@ void rtc32k_enable(void)
 	writel((1 << 3) | (1 << 6), &rtc->osc);
 }
 
-#define UART_RESET		(0x1 << 1)
-#define UART_CLK_RUNNING_MASK	0x1
-#define UART_SMART_IDLE_EN	(0x1 << 0x3)
-
-void uart_soft_reset(void)
+static void uart_soft_reset(void)
 {
 	struct uart_sys *uart_base = (struct uart_sys *)DEFAULT_UART_BASE;
 	u32 regval;
@@ -182,4 +178,42 @@ void uart_soft_reset(void)
 	regval |= UART_SMART_IDLE_EN;
 	writel(regval, &uart_base->uartsyscfg);
 }
+
+static void watchdog_disable(void)
+{
+	struct wd_timer *wdtimer = (struct wd_timer *)WDT_BASE;
+
+	writel(0xAAAA, &wdtimer->wdtwspr);
+	while (readl(&wdtimer->wdtwwps) != 0x0)
+		;
+	writel(0x5555, &wdtimer->wdtwspr);
+	while (readl(&wdtimer->wdtwwps) != 0x0)
+		;
+}
 #endif
+
+void s_init(void)
+{
+	/*
+	 * Save the boot parameters passed from romcode.
+	 * We cannot delay the saving further than this,
+	 * to prevent overwrites.
+	 */
+#ifdef CONFIG_SPL_BUILD
+	save_omap_boot_params();
+	watchdog_disable();
+	timer_init();
+	set_uart_mux_conf();
+	setup_clocks_for_console();
+	uart_soft_reset();
+
+	gd = &gdata;
+	preloader_console_init();
+
+	prcm_init();
+	set_mux_conf_regs();
+	/* Enable RTC32K clock */
+	rtc32k_enable();
+	sdram_init();
+#endif
+}
