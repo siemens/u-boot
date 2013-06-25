@@ -145,6 +145,7 @@ int arch_misc_init(void)
 }
 
 #ifdef CONFIG_SPL_BUILD
+#if !defined(CONFIG_SPL_AM33XX_DO_NOT_ENABLE_RTC32K)
 static void rtc32k_enable(void)
 {
 	struct rtc_regs *rtc = (struct rtc_regs *)RTC_BASE;
@@ -160,6 +161,7 @@ static void rtc32k_enable(void)
 	/* Enable the RTC 32K OSC by setting bits 3 and 6. */
 	writel((1 << 3) | (1 << 6), &rtc->osc);
 }
+#endif
 
 static void uart_soft_reset(void)
 {
@@ -213,7 +215,9 @@ void s_init(void)
 	prcm_init();
 	set_mux_conf_regs();
 	/* Enable RTC32K clock */
+#if !defined(CONFIG_SPL_AM33XX_DO_NOT_ENABLE_RTC32K)
 	rtc32k_enable();
+#endif
 	sdram_init();
 #endif
 }
