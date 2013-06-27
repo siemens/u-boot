@@ -274,6 +274,7 @@
 #define CONFIG_DFU_FUNCTION
 #define CONFIG_DFU_NAND
 #define CONFIG_CMD_DFU
+#define CONFIG_SYS_DFU_DATA_BUF_SIZE	(1 << 20)
 
 #endif /* CONFIG_SPL_BUILD */
 
@@ -359,10 +360,11 @@
 	"spl.backup2 part 0 3;" \
 	"spl.backup3 part 0 4;" \
 	"u-boot part 0 5;" \
+	"u-boot.env part 0 6;" \
 	"kernel_a part 0 7;" \
 	"kernel_b part 0 8;" \
 	"rootfs part 0 10"
-	
+
 #define CONFIG_COMMON_ENV_SETTINGS \
 	"verify=no \0" \
 	"project_dir=systemone\0" \
@@ -465,7 +467,5 @@
 #define CONFIG_AUTOBOOT_STOP_STR	"\x1b\x1b"
 #define CONFIG_AUTOBOOT_PROMPT	"Autobooting in %d seconds, "		\
 				"press \"<Esc><Esc>\" to stop\n", bootdelay
-
-#define CONFIG_SYS_DFU_DATA_BUF_SIZE	(1 << 20)
 
 #endif	/* ! __CONFIG_SIEMENS_AM33X_COMMON_H */
