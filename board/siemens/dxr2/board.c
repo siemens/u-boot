@@ -49,7 +49,7 @@ static struct dxr2_baseboard_id __attribute__((section(".data"))) settings;
 const struct ddr3_data ddr3_default = {
 	0x33524444, 0x56312e33, 0x0100, 0x0001, 0x003A, 0x008A, 0x010B,
 	0x00C4, 0x0888A39B, 0x26247FDA, 0x501F821F, 0x0006, 0x61C04AB2,
-	0x0000093B,
+	0x00000618,
 };
 
 static void set_default_ddr3_timings(void)

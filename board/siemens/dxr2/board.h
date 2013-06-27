@@ -45,7 +45,7 @@ struct ddr3_data {
 	unsigned int sdram_tim3;		/* 0x501F821F */
 	unsigned short int emif_ddr_phy_ctlr_1;	/* 0x0006 */
 	unsigned int sdram_config;		/* 0x61C04AB2 */
-	unsigned int ref_ctrl;			/* 0x0000093B */
+	unsigned int ref_ctrl;			/* 0x00000618 */
 };
 
 struct chip_data {
