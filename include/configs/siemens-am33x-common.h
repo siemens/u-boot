@@ -388,6 +388,7 @@
 	"bootenv=uEnv.txt\0" \
 	"bootargs_defaults=setenv bootargs " \
 		"console=${console} " \
+		"${testargs} " \
 		"${optargs}\0" \
 	"nand_args=run bootargs_defaults;" \
 		"mtdparts default;" \
@@ -443,7 +444,7 @@
 		"tftpboot ${kloadaddr} ${serverip}:${bootfile}; " \
 		"bootm ${kloadaddr}\0" \
 	"flash_self=run nand_boot\0" \
-	"flash_self_test=setenv bootargs_defaults ${bootargs_defaults} test; " \
+	"flash_self_test=setenv testargs test; " \
 		"run nand_boot\0" \
 	"dfu_start=echo Preparing for dfu mode ...; " \
 		"run dfu_args; \0" \
