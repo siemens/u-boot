@@ -23,6 +23,7 @@
 #include <errno.h>
 #include <malloc.h>
 #include <mmc.h>
+#include <nand.h>
 #include <fat.h>
 #include <dfu.h>
 #include <linux/list.h>
@@ -176,6 +177,37 @@ int dfu_write(struct dfu_entity *dfu, void *buf, int size, int blk_seq_num)
 			ret = dfu->flush_medium(dfu);
 		printf("\nDFU complete CRC32: 0x%08x\n", dfu->crc);
 
+		/* in case of ubi partition, erase rest of the partition */
+		if (dfu->ubi == 1) {
+			int ret;
+			nand_info_t *nand;
+			/* erase complete partition */
+			nand_erase_options_t opts;
+
+			if (nand_curr_device < 0 ||
+			    nand_curr_device >= CONFIG_SYS_MAX_NAND_DEVICE ||
+			    !nand_info[nand_curr_device].name) {
+				printf("%s: invalid nand device\n", __func__);
+				return -1;
+			}
+
+			nand = &nand_info[nand_curr_device];
+
+			memset(&opts, 0, sizeof(opts));
+			opts.offset = dfu->data.nand.start + dfu->offset +
+					dfu->bad_skip;
+			opts.length = dfu->data.nand.start +
+					dfu->data.nand.size - opts.offset;
+			opts.lim = opts.length;
+			opts.spread = 1;
+			opts.quiet = 0;
+			ret = nand_erase_opts(nand, &opts);
+			if (ret) {
+				printf("Failure erase: %d\n", ret);
+				return ret;
+			}
+		}
+
 		/* clear everything */
 		dfu_free_buf();
 		dfu->crc = 0;
@@ -186,7 +218,6 @@ int dfu_write(struct dfu_entity *dfu, void *buf, int size, int blk_seq_num)
 		dfu->i_buf = dfu->i_buf_start;
 
 		dfu->inited = 0;
-
 	}
 
 	return ret = 0 ? size : ret;

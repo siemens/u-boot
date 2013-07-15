@@ -111,6 +111,8 @@ struct dfu_entity {
 	u32 bad_skip;	/* for nand use */
 
 	unsigned int inited:1;
+	/* for nand/ubi use */
+	unsigned int ubi:1;
 };
 
 int dfu_config_entities(char *s, char *interface, int num);

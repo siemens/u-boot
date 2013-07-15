@@ -153,6 +153,7 @@ int dfu_fill_entity_nand(struct dfu_entity *dfu, char *s)
 	char *st;
 	int ret, dev, part;
 
+	dfu->ubi = 0;
 	dfu->dev_type = DFU_DEV_NAND;
 	st = strsep(&s, " ");
 	if (!strcmp(st, "raw")) {
@@ -185,7 +186,32 @@ int dfu_fill_entity_nand(struct dfu_entity *dfu, char *s)
 
 		dfu->data.nand.start = pi->offset;
 		dfu->data.nand.size = pi->size;
+	} else if (!strcmp(st, "partubi")) {
+		char mtd_id[32];
+		struct mtd_device *mtd_dev;
+		u8 part_num;
+		struct part_info *pi;
 
+		dfu->layout = DFU_RAW_ADDR;
+
+		dev = simple_strtoul(s, &s, 10);
+		s++;
+		part = simple_strtoul(s, &s, 10);
+
+		sprintf(mtd_id, "%s%d,%d", "nand", dev, part - 1);
+		printf("using id '%s'\n", mtd_id);
+
+		mtdparts_init();
+
+		ret = find_dev_and_part(mtd_id, &mtd_dev, &part_num, &pi);
+		if (ret != 0) {
+			printf("Could not locate '%s'\n", mtd_id);
+			return -1;
+		}
+
+		dfu->data.nand.start = pi->offset;
+		dfu->data.nand.size = pi->size;
+		dfu->ubi = 1;
 	} else {
 		printf("%s: Memory layout (%s) not supported!\n", __func__, st);
 		return -1;
