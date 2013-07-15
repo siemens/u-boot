@@ -363,7 +363,7 @@
 	"u-boot.env part 0 6;" \
 	"kernel_a part 0 7;" \
 	"kernel_b part 0 8;" \
-	"rootfs part 0 10"
+	"rootfs partubi 0 10"
 
 #define CONFIG_COMMON_ENV_SETTINGS \
 	"verify=no \0" \
