@@ -479,4 +479,6 @@
 #define CONFIG_AUTOBOOT_PROMPT	"Autobooting in %d seconds, "		\
 				"press \"<Esc><Esc>\" to stop\n", bootdelay
 
+#define CONFIG_BOOTCOUNT_LIMIT
+#define CONFIG_BOOTCOUNT_ENV
 #endif	/* ! __CONFIG_SIEMENS_AM33X_COMMON_H */
