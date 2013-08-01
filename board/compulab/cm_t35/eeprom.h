@@ -10,7 +10,7 @@
 #ifndef _EEPROM_
 #define _EEPROM_
 
-#ifdef CONFIG_DRIVER_OMAP34XX_I2C
+#ifdef CONFIG_SYS_I2C_OMAP34XX
 int cm_t3x_eeprom_read_mac_addr(uchar *buf);
 u32 cm_t3x_eeprom_get_board_rev(void);
 #else
