@@ -2,7 +2,7 @@
  * (C) Copyright 2002 ELTEC Elektronik AG
  * Frank Gottschling <fgottschling@eltec.de>
  *
- * SPDX-License-Identifier:	GPL-2.0+ 
+ * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -434,11 +434,14 @@ static const int video_font_draw_table32[16][4] = {
  * Implement a weak default function for boards that optionally
  * need to skip the cfb initialization.
  */
-__weak int board_cfb_skip(void)
+int __board_cfb_skip(void)
 {
 	/* As default, don't skip cfb init */
 	return 0;
 }
+
+int board_cfb_skip(void)
+	__attribute__ ((weak, alias("__board_cfb_skip")));
 
 static void video_drawchars(int xx, int yy, unsigned char *s, int count)
 {
