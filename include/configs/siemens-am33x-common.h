@@ -360,31 +360,38 @@
 #define CONFIG_COMMON_ENV_SETTINGS \
 	"verify=no \0" \
 	"project_dir=systemone\0" \
+	"upgrade_available=0\0" \
+	"boot_retries=0\0" \
+	"max_boot_retries=3\0" \
+	"partitionset_active=A\0" \
 	"loadaddr=0x82000000\0" \
 	"kloadaddr=0x81000000\0" \
 	"script_addr=0x81900000\0" \
-	"console=console=ttyMTD,mtdoops console=ttyO0,115200n8\0" \
-	"active_set=a\0" \
+	"console=console=ttyMTD,mtdoops console=ttyO0,115200n8 panic=5\0" \
 	"nand_active_ubi_vol=rootfs_a\0" \
+	"nand_active_ubi_vol_A=rootfs_a\0" \
+	"nand_active_ubi_vol_B=rootfs_b\0" \
 	"nand_root_fs_type=ubifs rootwait=1\0" \
 	"nand_src_addr=0x280000\0" \
-	"nand_src_addr_a=0x280000\0" \
-	"nand_src_addr_b=0x780000\0" \
+	"nand_src_addr_A=0x280000\0" \
+	"nand_src_addr_B=0x780000\0" \
 	"nfsopts=nolock rw mem=128M\0" \
 	"ip_method=none\0" \
 	"bootenv=uEnv.txt\0" \
 	"bootargs_defaults=setenv bootargs " \
 		"console=${console} " \
+		"${testargs} " \
 		"${optargs}\0" \
 	"nand_args=run bootargs_defaults;" \
 		"mtdparts default;" \
-		"setenv nand_active_ubi_vol rootfs_${active_set};" \
-		"setenv ${active_set} true;" \
-		"if test -n ${a}; then " \
-			"setenv nand_src_addr ${nand_src_addr_a};" \
+		"setenv ${partitionset_active} true;" \
+		"if test -n ${A}; then " \
+			"setenv nand_active_ubi_vol ${nand_active_ubi_vol_A};" \
+			"setenv nand_src_addr ${nand_src_addr_A};" \
 		"fi;" \
-		"if test -n ${b}; then " \
-			"setenv nand_src_addr ${nand_src_addr_b};" \
+		"if test -n ${B}; then " \
+			"setenv nand_active_ubi_vol ${nand_active_ubi_vol_B};" \
+			"setenv nand_src_addr ${nand_src_addr_B};" \
 		"fi;" \
 		"setenv nand_root ubi0:${nand_active_ubi_vol} rw " \
 		"ubi.mtd=9,2048;" \
@@ -405,9 +412,22 @@
 		"setenv bootargs ${bootargs} " \
 		"root=/dev/nfs ${mtdparts} " \
 		"nfsroot=${serverip}:${rootpath},${nfsopts} " \
-		"addip=setenv bootargs ${bootargs} ip=${ipaddr}:${serverip}:" \
+		"ip=${ipaddr}:${serverip}:" \
 		"${gatewayip}:${netmask}:${hostname}:eth0:off\0" \
-	"nand_boot=echo Booting from nand, active set ${active_set} ...; " \
+	"nand_boot=echo Booting from nand, set ${partitionset_active}...; " \
+		"if test ${upgrade_available} -eq 1; then " \
+			"if test ${boot_retries} -ge ${max_boot_retries}; " \
+				"then " \
+				"setenv boot_retries 0;" \
+				"setenv ${partitionset_active} true;" \
+				"if test -n ${A}; then " \
+					"setenv partitionset_active B; " \
+				"fi;" \
+				"if test -n ${B}; then " \
+					"setenv partitionset_active A; " \
+				"fi;" \
+			"fi;" \
+		"fi;" \
 		"run nand_args; " \
 		"nand read.i ${kloadaddr} ${nand_src_addr} " \
 		"${nand_img_size}; bootm ${kloadaddr}\0" \
@@ -416,7 +436,7 @@
 		"tftpboot ${kloadaddr} ${serverip}:${bootfile}; " \
 		"bootm ${kloadaddr}\0" \
 	"flash_self=run nand_boot\0" \
-	"flash_self_test=setenv bootargs_defaults ${bootargs_defaults} test; " \
+	"flash_self_test=setenv testargs test; " \
 		"run nand_boot\0" \
 	"dfu_start=echo Preparing for dfu mode ...; " \
 		"run dfu_args; \0" \
@@ -427,8 +447,9 @@
 		"mode; echo Not ready yet: 'run flash_nfs' to use kernel " \
 		"from memory and root filesystem over NFS; echo Type " \
 		"'run net_nfs' to get Kernel over TFTP and mount root " \
-		"filesystem over NFS; echo Set active_set variable to 'a' " \
-		"or 'b' to select kernel and rootfs partition; " \
+		"filesystem over NFS; " \
+		"echo Set partitionset_active variable to 'A' " \
+		"or 'B' to select kernel and rootfs partition; " \
 		"echo" \
 		"\0"
 
