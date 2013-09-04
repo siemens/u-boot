@@ -83,20 +83,21 @@ struct cmd_control rut_ddr3_cmd_ctrl_data = {
 		   &rut_ddr3_cmd_ctrl_data, &rut_ddr3_emif_reg_data, 0);
 }
 
-static int request_and_pulse_reset(int gpio, const char* name)
+
+static int request_and_pulse_reset(int gpio, const char *name)
 {
 	int ret;
 	const int delay_us = 2000; /* 2ms */
 
 	ret = gpio_request(gpio, name);
 	if (ret < 0) {
-		printf("%s: Unable to request %s\n", __FUNCTION__, name);
+		printf("%s: Unable to request %s\n", __func__, name);
 		goto err;
 	}
 
 	ret = gpio_direction_output(gpio, 0);
 	if (ret < 0) {
-		printf("%s: Unable to set %s  as output\n", __FUNCTION__, name);
+		printf("%s: Unable to set %s  as output\n", __func__, name);
 		goto err_free_gpio;
 	}
 
@@ -113,7 +114,7 @@ err:
 }
 
 #define GPIO_TO_PIN(bank, gpio)		(32 * (bank) + (gpio))
-#define ETH_PHY_RSTn_GPIO		GPIO_TO_PIN(2, 18)
+#define ETH_PHY_RESET_GPIO		GPIO_TO_PIN(2, 18)
 #define MAXTOUCH_RESET_GPIO		GPIO_TO_PIN(3, 18)
 #define DISPLAY_RESET_GPIO		GPIO_TO_PIN(3, 19)
 
@@ -122,7 +123,7 @@ err:
 
 static void spl_siemens_board_init(void)
 {
-	REQUEST_AND_PULSE_RESET(ETH_PHY_RSTn_GPIO);
+	REQUEST_AND_PULSE_RESET(ETH_PHY_RESET_GPIO);
 	REQUEST_AND_PULSE_RESET(MAXTOUCH_RESET_GPIO);
 	REQUEST_AND_PULSE_RESET(DISPLAY_RESET_GPIO);
 }
