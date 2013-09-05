@@ -70,6 +70,7 @@
 	"hostname=pxm2\0" \
 	"nand_img_size=0x500000\0" \
 	"optargs=\0" \
+	"splashpos=m,m\0"	\
 	CONFIG_COMMON_ENV_SETTINGS \
 	"mmc_dev=0\0" \
 	"mmc_root=/dev/mmcblk0p2 rw\0" \

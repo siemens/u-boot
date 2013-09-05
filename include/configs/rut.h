@@ -65,7 +65,7 @@
 /* Default env settings */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"hostname=rut\0" \
-	"splashpos=488,352\0" \
+	"splashpos=m,m\0" \
 	"optargs=fixrtc --no-log consoleblank=0 \0" \
 	CONFIG_COMMON_ENV_SETTINGS \
 	"mmc_dev=0\0" \
