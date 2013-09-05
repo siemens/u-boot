@@ -36,6 +36,9 @@ static int genphy_config_advert(struct phy_device *phydev)
 	int oldadv, adv;
 	int err, changed = 0;
 
+	if (!phydev)
+		return -1;
+
 	/* Only allow advertising what
 	 * this PHY supports */
 	phydev->advertising &= phydev->supported;
@@ -114,6 +117,9 @@ static int genphy_setup_forced(struct phy_device *phydev)
 	int err;
 	int ctl = 0;
 
+	if (!phydev)
+		return -1;
+
 	phydev->pause = phydev->asym_pause = 0;
 
 	if (SPEED_1000 == phydev->speed)
@@ -166,6 +172,9 @@ int genphy_config_aneg(struct phy_device *phydev)
 {
 	int result;
 
+	if (!phydev)
+		return -1;
+
 	if (AUTONEG_ENABLE != phydev->autoneg)
 		return genphy_setup_forced(phydev);
 
@@ -205,6 +214,9 @@ int genphy_config_aneg(struct phy_device *phydev)
 int genphy_update_link(struct phy_device *phydev)
 {
 	unsigned int mii_reg;
+
+	if (!phydev)
+		return -1;
 
 	/*
 	 * Wait if the link is up, and autonegotiation is in progress
@@ -273,6 +285,9 @@ int genphy_update_link(struct phy_device *phydev)
 int genphy_parse_link(struct phy_device *phydev)
 {
 	int mii_reg = phy_read(phydev, MDIO_DEVAD_NONE, MII_BMSR);
+
+	if (!phydev)
+		return -1;
 
 	/* We're using autonegotiation */
 	if (mii_reg & BMSR_ANEGCAPABLE) {
@@ -364,6 +379,9 @@ int genphy_config(struct phy_device *phydev)
 {
 	int val;
 	u32 features;
+
+	if (!phydev)
+		return -1;
 
 	/* For now, I'll claim that the generic driver supports
 	 * all possible port types */
@@ -494,6 +512,9 @@ int phy_register(struct phy_driver *drv)
 static int phy_probe(struct phy_device *phydev)
 {
 	int err = 0;
+
+	if (!phydev)
+		return -1;
 
 	phydev->advertising = phydev->supported = phydev->drv->features;
 	phydev->mmds = phydev->drv->mmds;
@@ -782,6 +803,9 @@ struct phy_device *phy_connect(struct mii_dev *bus, int addr,
  */
 int phy_startup(struct phy_device *phydev)
 {
+	if (!phydev)
+		return -1;
+
 	if (phydev->drv->startup)
 		return phydev->drv->startup(phydev);
 
@@ -790,6 +814,9 @@ int phy_startup(struct phy_device *phydev)
 
 static int __board_phy_config(struct phy_device *phydev)
 {
+	if (!phydev)
+		return -1;
+
 	if (phydev->drv->config)
 		return phydev->drv->config(phydev);
 	return 0;
@@ -808,6 +835,9 @@ int phy_config(struct phy_device *phydev)
 
 int phy_shutdown(struct phy_device *phydev)
 {
+	if (!phydev)
+		return -1;
+
 	if (phydev->drv->shutdown)
 		phydev->drv->shutdown(phydev);
 
