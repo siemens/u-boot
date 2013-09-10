@@ -395,8 +395,6 @@ static int conf_disp_pll(int m, int n)
 		0
 	};
 	do_enable_clocks(clk_domains, clk_modules_explicit_en, 1);
-	/* 0x44e0_0500 write lcdc pixel clock mux Linux hat hier 0 */
-	writel(0x0, &cmdpll->clklcdcpixelclk);
 
 	do_setup_dpll(&dpll_lcd_regs, &dpll_lcd);
 
@@ -460,7 +458,7 @@ static int board_video_init(void)
 		printf("%s: %s not found, using default %s\n", __func__,
 		       factory_dat.disp_name, lcd_panels[i].name);
 	}
-	conf_disp_pll(25, 2);
+	conf_disp_pll(24, 1);
 	da8xx_video_init(&lcd_panels[display], &lcd_cfgs[display],
 			 lcd_cfgs[display].bpp);
 

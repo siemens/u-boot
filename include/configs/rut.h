@@ -151,6 +151,7 @@
 #define BOARD_LCD_RESET		115	/* Bank 3 pin 19 */
 #define CONFIG_ARCH_EARLY_INIT_R
 #define CONFIG_FORMIKE
+#define DISPL_PLL_SPREAD_SPECTRUM
 #endif
 
 #endif	/* ! __CONFIG_RUT_H */
