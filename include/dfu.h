@@ -114,6 +114,7 @@ char *dfu_extract_token(char** e, int *n);
 void dfu_trigger_reset(void);
 int dfu_get_alt(const char *name);
 bool dfu_reset(void);
+int dfu_init_env_entities(char *interface, int dev);
 
 int dfu_read(struct dfu_entity *de, void *buf, int size, int blk_seq_num);
 int dfu_write(struct dfu_entity *de, void *buf, int size, int blk_seq_num);
