@@ -361,8 +361,7 @@
 	"verify=no \0" \
 	"project_dir=systemone\0" \
 	"upgrade_available=0\0" \
-	"boot_retries=0\0" \
-	"max_boot_retries=3\0" \
+	"bootlimit=3\0" \
 	"partitionset_active=A\0" \
 	"loadaddr=0x82000000\0" \
 	"kloadaddr=0x81000000\0" \
@@ -416,9 +415,9 @@
 		"${gatewayip}:${netmask}:${hostname}:eth0:off\0" \
 	"nand_boot=echo Booting from nand, set ${partitionset_active}...; " \
 		"if test ${upgrade_available} -eq 1; then " \
-			"if test ${boot_retries} -ge ${max_boot_retries}; " \
+			"if test ${bootcount} -ge ${bootlimit}; " \
 				"then " \
-				"setenv boot_retries 0;" \
+				"setenv upgrade_available 0;" \
 				"setenv ${partitionset_active} true;" \
 				"if test -n ${A}; then " \
 					"setenv partitionset_active B; " \
