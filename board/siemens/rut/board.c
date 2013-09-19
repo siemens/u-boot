@@ -378,7 +378,6 @@ int clk_get(int clk)
 static int conf_disp_pll(int m, int n)
 {
 	struct cm_perpll *cmper = (struct cm_perpll *)CM_PER;
-	struct cm_dpll *cmdpll = (struct cm_dpll *)CM_DPLL;
 	struct dpll_params dpll_lcd = {m, n, -1, -1, -1, -1, -1};
 #if defined(DISPL_PLL_SPREAD_SPECTRUM)
 	struct cm_wkuppll *cmwkup = (struct cm_wkuppll *)CM_WKUP;
