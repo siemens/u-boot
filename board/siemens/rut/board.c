@@ -420,10 +420,13 @@ static int enable_lcd(void)
 {
 	unsigned char buf[1];
 
+	set_gpio(BOARD_LCD_RESET, 0);
+	mdelay(1);
 	set_gpio(BOARD_LCD_RESET, 1);
+	mdelay(1);
 
 	/* spi lcd init */
-	kwh043st20_f01_spi_startup(1, 0, 5000000, SPI_MODE_3);
+	kwh043st20_f01_spi_startup(1, 0, 5000000, SPI_MODE_0);
 
 	/* backlight on */
 	buf[0] = 0xf;
