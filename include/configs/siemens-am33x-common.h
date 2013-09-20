@@ -255,11 +255,11 @@
 #define CONFIG_USB_GADGET
 #define CONFIG_USBDOWNLOAD_GADGET
 
-/* USB TI's IDs */
+/* USB DRACO ID as default */
 #define CONFIG_USBD_HS
-#define CONFIG_G_DNL_VENDOR_NUM 0x0525
-#define CONFIG_G_DNL_PRODUCT_NUM 0x4a47
-#define CONFIG_G_DNL_MANUFACTURER "Texas Instruments"
+#define CONFIG_G_DNL_VENDOR_NUM 0x0908
+#define CONFIG_G_DNL_PRODUCT_NUM 0x02d2
+#define CONFIG_G_DNL_MANUFACTURER "Siemens AG"
 
 /* USB Device Firmware Update support */
 #define CONFIG_DFU_FUNCTION
