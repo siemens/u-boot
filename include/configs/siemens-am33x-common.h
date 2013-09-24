@@ -414,20 +414,24 @@
 		"nfsroot=${serverip}:${rootpath},${nfsopts} " \
 		"ip=${ipaddr}:${serverip}:" \
 		"${gatewayip}:${netmask}:${hostname}:eth0:off\0" \
-	"nand_boot=echo Booting from nand, set ${partitionset_active}...; " \
+	"nand_boot=echo Booting from nand; " \
 		"if test ${upgrade_available} -eq 1; then " \
-			"if test ${bootcount} -ge ${bootlimit}; " \
+			"if test ${bootcount} -gt ${bootlimit}; " \
 				"then " \
 				"setenv upgrade_available 0;" \
 				"setenv ${partitionset_active} true;" \
 				"if test -n ${A}; then " \
 					"setenv partitionset_active B; " \
+					"env delete A; " \
 				"fi;" \
 				"if test -n ${B}; then " \
 					"setenv partitionset_active A; " \
+					"env delete B; " \
 				"fi;" \
+				"saveenv; " \
 			"fi;" \
 		"fi;" \
+		"echo set ${partitionset_active}...;" \
 		"run nand_args; " \
 		"nand read.i ${kloadaddr} ${nand_src_addr} " \
 		"${nand_img_size}; bootm ${kloadaddr}\0" \
@@ -478,6 +482,10 @@
 #define CONFIG_AUTOBOOT_STOP_STR	"\x1b\x1b"
 #define CONFIG_AUTOBOOT_PROMPT	"Autobooting in %d seconds, "		\
 				"press \"<Esc><Esc>\" to stop\n", bootdelay
+
+/* Reboot after 60 sec if bootcmd fails */
+#define CONFIG_RESET_TO_RETRY
+#define CONFIG_BOOT_RETRY_TIME 60
 
 #define CONFIG_BOOTCOUNT_LIMIT
 #define CONFIG_BOOTCOUNT_ENV
