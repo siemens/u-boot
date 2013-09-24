@@ -65,6 +65,7 @@
 /* Default env settings */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"hostname=rut\0" \
+	"nand_img_size=0x500000\0" \
 	"splashpos=m,m\0" \
 	"optargs=fixrtc --no-log consoleblank=0 \0" \
 	CONFIG_COMMON_ENV_SETTINGS \
@@ -111,9 +112,7 @@
 		"fi;" \
 	"fi;" \
 	"run nand_boot;" \
-	"if ping ${serverip}; then " \
-		"run net_nfs; " \
-	"fi; "
+	"reset;"
 
 #else
 #define CONFIG_BOOTDELAY		0

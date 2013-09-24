@@ -119,9 +119,7 @@
 		"fi;" \
 	"fi;" \
 	"run nand_boot;" \
-	"if ping ${serverip}; then " \
-		"run net_nfs; " \
-	"fi; "
+	"reset;"
 
 #else
 #define CONFIG_BOOTDELAY		0

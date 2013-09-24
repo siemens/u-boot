@@ -20,7 +20,6 @@
 #include "siemens-am33x-common.h"
 
 #define CONFIG_SYS_MPUCLK	275
-#define DXR2_IOCTRL_VAL	0x18b
 #define DDR_PLL_FREQ	303
 #define CONFIG_SPL_AM33XX_DO_NOT_ENABLE_RTC32K
 
@@ -62,7 +61,7 @@
 /* Default env settings */
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"hostname=dxr2\0" \
-	"nand_img_size=0x300000\0" \
+	"nand_img_size=0x400000\0" \
 	"optargs=\0" \
 	CONFIG_COMMON_ENV_SETTINGS
 
@@ -75,10 +74,9 @@
 	"run dfu_start; " \
 	"reset; " \
 "fi;" \
-"if ping ${serverip}; then " \
-	"run net_nfs; " \
-"fi;" \
-"run nand_boot;"
+"run nand_boot;" \
+"reset;"
+
 
 #else
 #define CONFIG_BOOTDELAY		0
