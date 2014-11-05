@@ -9,30 +9,41 @@ cache:
  - apt
 
 install:
- - sudo apt-get install -qq cppcheck sloccount sparse bc device-tree-compiler gcc-arm-linux-gnueabi
+ # install U-Boot build dependencies
+ - sudo apt-get install -qq cppcheck sloccount sparse bc libsdl-dev gcc-arm-linux-gnueabi
+ # install latest device tree compiler
+ - git clone --depth=1 https://git.kernel.org/pub/scm/utils/dtc/dtc.git /tmp/dtc
+ - make -j4 -C /tmp/dtc
+ # prepare buildman environment
+ - echo -e "[toolchain]\\n root: /\\n eldk: /opt/eldk5.4" > ~/.buildman
 
 env:
   global:
+    - PATH=$PATH:/tmp/dtc
     - BUILD_DIR=build
     - DOWNLOAD_URL=""
     - INSTALL_CMD=""
     - CROSS_COMPILE=""
-    - HOSTCC  = "cc"
-    - HOSTCXX = "c++"
+    - HOSTCC="cc"
+    - HOSTCXX="c++"
+    - TEST_CONFIG_CMD=""
 
 before_script:
- - if [[ "$DOWNLOAD_URL" != "" ]]; then wget $DOWNLOAD_URL ; fi
- - if [[ "$INSTALL_CMD" != "" ]]; then $INSTALL_CMD ; fi
+ # test configurations can define DOWNLOAD_URL and INSTALL_CMD to be installed
+ - if [[ "${DOWNLOAD_URL}" != "" ]]; then wget ${DOWNLOAD_URL} ; fi
+ - if [[ "${INSTALL_CMD}" != "" ]]; then ${INSTALL_CMD} ; fi
 
 script:
- - export BUILD_NCPUS="`grep processor /proc/cpuinfo | wc -l`"
- - echo "BUILD on" $BUILD_NCPUS "cpu's"
- - echo $TEST_CMD && $TEST_CMD
+ # the execution sequence for each test
+ - echo ${TEST_CONFIG_CMD}
+ - ${TEST_CONFIG_CMD}
+ - echo ${TEST_CMD}
+ - ${TEST_CMD}
 
 matrix:
   include:
-# arm and powerpc have too many boards for th 50min time limit
-# so we need to build by vendor
+  # we need to build by vendor due to 50min time limit for builds
+  # each env setting here is a dedicated build
     - env:
         - TEST_CMD="./MAKEALL -a arm -v atmel"
           CROSS_COMPILE="arm-linux-gnueabi-"
@@ -49,18 +60,21 @@ matrix:
         - TEST_CMD="./MAKEALL -a arm -v ti"
           CROSS_COMPILE="arm-linux-gnueabi-"
     - env:
-        - TEST_CMD="./MAKEALL -a x86"
+        - TEST_CONFIG_CMD="make sandbox_defconfig"
+        - TEST_CMD="make -j4"
         - HOSTCC  = "gcc"
         - HOSTCXX  = "g++"
     - env:
-        - TEST_CMD="./MAKEALL -a x86"
+        - TEST_CONFIG_CMD="make sandbox_defconfig"
+        - TEST_CMD="make -j4"
         - HOSTCC  = "clang"
         - HOSTCXX  = "clang++"
-    - env:
-        - TEST_CMD="./MAKEALL -a powerpc -v freescale"
-          CROSS_COMPILE="/opt/eldk-5.4/powerpc/sysroots/i686-eldk-linux/usr/bin/powerpc-linux/powerpc-"
-          DOWNLOAD_URL="ftp://ftp.denx.de/pub/eldk/5.4/targets/powerpc/eldk-eglibc-i686-powerpc-toolchain-gmae-5.4.sh"
-          INSTALL_CMD="sh eldk-eglibc-i686-powerpc-toolchain-gmae-5.4.sh -y"
+# TODO split this powerpc job, it takes usually more than 50min
+#    - env:
+#        - TEST_CMD="./MAKEALL -a powerpc -v freescale"
+#          CROSS_COMPILE="/opt/eldk-5.4/powerpc/sysroots/i686-eldk-linux/usr/bin/powerpc-linux/powerpc-"
+#          DOWNLOAD_URL="ftp://ftp.denx.de/pub/eldk/5.4/targets/powerpc/eldk-eglibc-i686-powerpc-toolchain-gmae-5.4.sh"
+#          INSTALL_CMD="sh eldk-eglibc-i686-powerpc-toolchain-gmae-5.4.sh -y"
     - env:
         - TEST_CMD="./MAKEALL -a mips"
           CROSS_COMPILE="/opt/eldk-5.4/mips/sysroots/i686-eldk-linux/usr/bin/mips32-linux/mips-linux-"
@@ -71,14 +85,27 @@ matrix:
           CROSS_COMPILE="/opt/eldk-5.4/armv7a-hf/sysroots/i686-eldk-linux/usr/bin/armv7ahf-vfp-neon-linux-gnueabi/arm-linux-gnueabi-"
           DOWNLOAD_URL="ftp://ftp.denx.de/pub/eldk/5.4/targets/armv7a-hf/eldk-eglibc-i686-arm-toolchain-gmae-5.4.sh"
           INSTALL_CMD="sh eldk-eglibc-i686-arm-toolchain-gmae-5.4.sh -y"
+    # TODO use buildman
     - env:
-        - TEST_CMD="cppcheck --force --quiet ."
+        - TEST_CMD="tools/buildman/buildman --list-tool-chains"
+    - env:
+        - TEST_CMD="tools/buildman/buildman --list-tool-chains"
+          DOWNLOAD_URL="ftp://ftp.denx.de/pub/eldk/5.4/targets/armv7a-hf/eldk-eglibc-i686-arm-toolchain-gmae-5.4.sh"
+          INSTALL_CMD="sh eldk-eglibc-i686-arm-toolchain-gmae-5.4.sh -y"
+    # QA jobs for code analytics
+    # static code analysis with cppcheck (we can add --enable=all later)
+    - env:
+        - TEST_CMD="cppcheck --force --quiet --inline-suppr ."
+    # search for TODO within source tree
     - env:
         - TEST_CMD="grep -r TODO *"
+    # search for FIXME within source tree
     - env:
         - TEST_CMD="grep -r FIXME *"
+    # search for HACK within source tree and ignore HACKKIT board
     - env:
-        - TEST_CMD="grep -r HACK *"
+        - TEST_CMD="grep -r HACK * | grep -v HACKKIT"
+    # some statistics about the code base
     - env:
         - TEST_CMD="sloccount ."
 
