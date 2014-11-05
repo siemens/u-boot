@@ -1,0 +1,86 @@
+# Copyright Roger Meier <r.meier@siemens.com>
+# SPDX-License-Identifier:	GPL-2.0+
+
+# build U-Boot on Travis CI - https://travis-ci.org/
+
+language: c
+
+cache:
+ - apt
+
+install:
+ - sudo apt-get install -qq cppcheck sloccount sparse bc device-tree-compiler gcc-arm-linux-gnueabi
+
+env:
+  global:
+    - BUILD_DIR=build
+    - DOWNLOAD_URL=""
+    - INSTALL_CMD=""
+    - CROSS_COMPILE=""
+    - HOSTCC  = "cc"
+    - HOSTCXX = "c++"
+
+before_script:
+ - if [[ "$DOWNLOAD_URL" != "" ]]; then wget $DOWNLOAD_URL ; fi
+ - if [[ "$INSTALL_CMD" != "" ]]; then $INSTALL_CMD ; fi
+
+script:
+ - export BUILD_NCPUS="`grep processor /proc/cpuinfo | wc -l`"
+ - echo "BUILD on" $BUILD_NCPUS "cpu's"
+ - echo $TEST_CMD && $TEST_CMD
+
+matrix:
+  include:
+# arm and powerpc have too many boards for th 50min time limit
+# so we need to build by vendor
+    - env:
+        - TEST_CMD="./MAKEALL -a arm -v atmel"
+          CROSS_COMPILE="arm-linux-gnueabi-"
+    - env:
+        - TEST_CMD="./MAKEALL -a arm -v denx"
+          CROSS_COMPILE="arm-linux-gnueabi-"
+    - env:
+        - TEST_CMD="./MAKEALL -a arm -v freescale"
+          CROSS_COMPILE="arm-linux-gnueabi-"
+    - env:
+        - TEST_CMD="./MAKEALL -a arm -v siemens"
+          CROSS_COMPILE="arm-linux-gnueabi-"
+    - env:
+        - TEST_CMD="./MAKEALL -a arm -v ti"
+          CROSS_COMPILE="arm-linux-gnueabi-"
+    - env:
+        - TEST_CMD="./MAKEALL -a x86"
+        - HOSTCC  = "gcc"
+        - HOSTCXX  = "g++"
+    - env:
+        - TEST_CMD="./MAKEALL -a x86"
+        - HOSTCC  = "clang"
+        - HOSTCXX  = "clang++"
+    - env:
+        - TEST_CMD="./MAKEALL -a powerpc -v freescale"
+          CROSS_COMPILE="/opt/eldk-5.4/powerpc/sysroots/i686-eldk-linux/usr/bin/powerpc-linux/powerpc-"
+          DOWNLOAD_URL="ftp://ftp.denx.de/pub/eldk/5.4/targets/powerpc/eldk-eglibc-i686-powerpc-toolchain-gmae-5.4.sh"
+          INSTALL_CMD="sh eldk-eglibc-i686-powerpc-toolchain-gmae-5.4.sh -y"
+    - env:
+        - TEST_CMD="./MAKEALL -a mips"
+          CROSS_COMPILE="/opt/eldk-5.4/mips/sysroots/i686-eldk-linux/usr/bin/mips32-linux/mips-linux-"
+          DOWNLOAD_URL="ftp://ftp.denx.de/pub/eldk/5.4/targets/mips/eldk-eglibc-i686-mips-toolchain-gmae-5.4.sh"
+          INSTALL_CMD="sh eldk-eglibc-i686-mips-toolchain-gmae-5.4.sh -y"
+    - env:
+        - TEST_CMD="./MAKEALL -a arm -v denx -v siemens"
+          CROSS_COMPILE="/opt/eldk-5.4/armv7a-hf/sysroots/i686-eldk-linux/usr/bin/armv7ahf-vfp-neon-linux-gnueabi/arm-linux-gnueabi-"
+          DOWNLOAD_URL="ftp://ftp.denx.de/pub/eldk/5.4/targets/armv7a-hf/eldk-eglibc-i686-arm-toolchain-gmae-5.4.sh"
+          INSTALL_CMD="sh eldk-eglibc-i686-arm-toolchain-gmae-5.4.sh -y"
+    - env:
+        - TEST_CMD="cppcheck --force --quiet ."
+    - env:
+        - TEST_CMD="grep -r TODO *"
+    - env:
+        - TEST_CMD="grep -r FIXME *"
+    - env:
+        - TEST_CMD="grep -r HACK *"
+    - env:
+        - TEST_CMD="sloccount ."
+
+notifications:
+  email: false
