@@ -137,6 +137,8 @@
 
 #define SUNXI_BROM_BASE			0xffff0000	/* 32 kiB */
 
+#define SUNXI_WDOG_CTL			(SUNXI_TIMER_BASE + 0x90)
+
 #define SUNXI_CPU_CFG			(SUNXI_TIMER_BASE + 0x13c)
 
 #ifndef __ASSEMBLY__

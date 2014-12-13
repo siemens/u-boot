@@ -2,6 +2,9 @@
  * Copyright (C) 2013 - ARM Ltd
  * Author: Marc Zyngier <marc.zyngier@arm.com>
  *
+ * Copyright (C) Siemens AG, 2014
+ * Author: Jan Kiszka <jan.kiszka@siemens.com>
+ *
  * Based on code by Carl van Schaik <carl@ok-labs.com>.
  *
  * This program is free software; you can redistribute it and/or modify
@@ -41,6 +44,35 @@
 #define	TEN_MS			(10 * ONE_MS)
 #define	GICD_BASE		0x1c81000
 #define	GICC_BASE		0x1c82000
+
+#define	TWI_DATA		0x0008
+#define	TWI_CNTR		0x000c
+#define	TWI_STAT		0x0010
+#define	TWI_CCR			0x0014
+#define	TWI_SRST		0x0018
+
+#define	TWI_CNTR_STOP		(1 << 4)
+#define	TWI_CNTR_START		(1 << 5)
+#define	TWI_CNTR_BUSEN		(1 << 6)
+
+#define	TWI_STAT_START_SENT	0x08
+#define	TWI_STAT_ADDR_ACK	0x18
+#define	TWI_STAT_DATA_ACK	0x28
+
+#define	TWI_CCR_100KHZ		((11 << 3) | 2)
+
+#define	AXP209_ADDR		0x34
+#define	AXP209_REG_SHUTDOWN	0x32
+#define	AXP209_SHUTDOWN_CTRL	0x80
+
+#define	WDOG_CTL		0x00
+#define	WDOG_MODE		0x04
+
+#define	WDOG_CTL_RSTART		(1 << 0)
+
+#define	WDOG_MODE_EN		(1 << 0)
+#define	WDOG_MODE_RSTEN		(1 << 1)
+#define	WDOG_MODE_0_5_S		(0x0 << 3)
 
 .macro	timer_wait	reg, ticks
 	@ Program CNTP_TVAL
@@ -175,10 +207,13 @@ out:	mcr	p15, 0, r7, c1, c1, 0
 
 	@ r1 = target CPU
 	@ r2 = target PC
+	@ r3 = context (v0.2 only)
 .globl	psci_cpu_on
 psci_cpu_on:
 	adr	r0, _target_pc
 	str	r2, [r0]
+	adr	r0, _context
+	str	r3, [r0]
 	dsb
 
 	movw	r0, #(SUN7I_CPUCFG_BASE & 0xffff)
@@ -236,6 +271,8 @@ psci_cpu_on:
 	mov	pc, lr
 
 _target_pc:
+	.word	0
+_context:
 	.word	0
 
 /* Imported from Linux kernel */
@@ -297,6 +334,8 @@ _sunxi_cpu_entry:
 
 	adr	r0, _target_pc
 	ldr	r0, [r0]
+	adr	r1, _context
+	ldr	r1, [r1]
 	b	_do_nonsec_entry
 
 .globl	psci_cpu_off
@@ -327,6 +366,84 @@ psci_cpu_off:
 
 1:	wfi
 	b	1b
+
+/*
+ * r0: TWI base address
+ * r1: state to wait for
+ */
+twi_wait:
+1:	ldr	r2, [r0, #TWI_STAT]		@ Read state
+	and	r2, r2, #0xff			@ Mask out state bits
+	cmp	r2, r1				@ State reached?
+	bne	1b
+
+	bx	lr
+
+/*
+ * r0: TWI base address
+ * r1: data value to be sent
+ */
+twi_send:
+	str	r1, [r0, #TWI_DATA]		@ Write outgoing data value
+	mov	r1, #(TWI_CNTR_BUSEN)		@ Trigger transmission
+	str	r1, [r0, #TWI_CNTR]
+
+	bx	lr
+
+.globl	psci_system_off
+psci_system_off:
+	movw	r0, #(SUNXI_TWI0_BASE & 0xffff)
+	movt	r0, #(SUNXI_TWI0_BASE >> 16)
+
+	@ Perform soft-reset
+	mov	r1, #0
+	str	r1, [r0, #TWI_SRST]
+
+	@ Configure speed
+	mov	r1, #TWI_CCR_100KHZ
+	str	r1, [r0, #TWI_CCR]
+
+	@ Send STOP (just in case), then transmit START condition
+	mov	r1, #(TWI_CNTR_BUSEN | TWI_CNTR_START | TWI_CNTR_STOP)
+	str	r1, [r0, #TWI_CNTR]
+	mov	r1, #TWI_STAT_START_SENT
+	bl	twi_wait
+
+	@ Send AXP209 address
+	mov	r1, #(AXP209_ADDR << 1)
+	bl	twi_send
+	mov	r1, #TWI_STAT_ADDR_ACK
+	bl	twi_wait
+
+	@ Select AXP209 register
+	mov	r1, #AXP209_REG_SHUTDOWN
+	bl	twi_send
+	mov	r1, #TWI_STAT_DATA_ACK
+	bl	twi_wait
+
+	@ Request shutdown
+	mov	r1, #AXP209_SHUTDOWN_CTRL
+	bl	twi_send
+	mov	r1, #TWI_STAT_DATA_ACK
+	bl	twi_wait
+
+	@ Complete the transmission with a STOP condition
+	mov	r1, #TWI_CNTR_STOP
+	str	r1, [r0, #TWI_CNTR]
+
+1:	b	1b
+
+.globl	psci_system_reset
+psci_system_reset:
+	movw	r0, #(SUNXI_WDOG_CTL & 0xffff)
+	movt	r0, #(SUNXI_WDOG_CTL >> 16)
+
+	mov	r1, #(WDOG_MODE_RSTEN | WDOG_MODE_EN | WDOG_MODE_0_5_S)
+	str	r1, [r0, #WDOG_MODE]
+
+	mov	r1, #WDOG_CTL_RSTART
+	str	r1, [r0, #WDOG_CTL]
+1:	b	1b
 
 text_end:
 	.popsection
