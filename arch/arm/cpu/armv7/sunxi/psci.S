@@ -159,6 +159,12 @@ psci_fiq_enter:
 	tst	r10, #0x100
 	beq	1b
 
+	@ Mark CPU disabled
+	adr	r2, _cpu_off
+	ldr	r0, [r2]
+	orr	r0, r0, r9
+	str	r0, [r2]
+
 	@ Restore security level
 out:	mcr	p15, 0, r7, c1, c1, 0
 
@@ -227,6 +233,12 @@ psci_cpu_on:
 	orr	r6, r6, r4
 	str	r6, [r0, #0x1e4]
 
+	@ Mark CPU enabled
+	adr	r2, _cpu_off
+	ldr	r0, [r2]
+	bic	r0, r0, r4
+	str	r0, [r2]
+
 	mov	r0, #ARM_PSCI_RET_SUCCESS	@ Return PSCI_RET_SUCCESS
 	mov	pc, lr
 
@@ -234,6 +246,8 @@ _target_pc:
 	.word	0
 _context:
 	.word	0
+_cpu_off:
+	.word	0x2
 
 /* Imported from Linux kernel */
 v7_flush_dcache_all:
@@ -326,6 +340,25 @@ psci_cpu_off:
 
 1:	wfi
 	b	1b
+
+	@ r1 = target CPU
+	@ r2 = lowest affinity level
+.globl	psci_affinity_info
+psci_affinity_info:
+	@ only support full match
+	cmp	r2, #0
+	mov	r0, #ARM_PSCI_RET_INVAL
+	bne	1
+
+	@ prepare CPU ID in r1, only caring about the first cluster
+	and	r1, r1, #3
+
+	adr	r2, _cpu_off
+	ldr	r0, [r2]			@ load bitmap of offlined CPUs
+	lsr	r0, r0, r1			@ shift right by CPU ID
+	and	r0, r0, #1			@ filter out relevant bit
+
+1:	mov	pc, lr
 
 /*
  * r0: TWI base address
