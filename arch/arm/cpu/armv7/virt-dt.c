@@ -96,6 +96,11 @@ int armv7_update_dt(void *fdt)
 	/* secure code lives in RAM, keep it alive */
 	fdt_add_mem_rsv(fdt, (unsigned long)__secure_start,
 			__secure_end - __secure_start);
+#elif defined(CONFIG_ARMV7_SECURE_RESERVE_SIZE)
+	/* secure code has been relocated into RAM carveout, keep it alive */
+	fdt_add_mem_rsv(fdt,
+			CONFIG_ARMV7_SECURE_BASE,
+			CONFIG_ARMV7_SECURE_RESERVE_SIZE);
 #endif
 
 	return fdt_psci(fdt);
