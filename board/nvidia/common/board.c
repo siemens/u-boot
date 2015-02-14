@@ -21,6 +21,7 @@
 #include <asm/arch/pwm.h>
 #endif
 #include <asm/arch/tegra.h>
+#include <asm/arch-tegra/ap.h>
 #include <asm/arch-tegra/board.h>
 #include <asm/arch-tegra/clk_rst.h>
 #include <asm/arch-tegra/pmc.h>
@@ -56,6 +57,7 @@ const struct tegra_sysinfo sysinfo = {
 	CONFIG_TEGRA_BOARD_STRING
 };
 
+__weak void ap_pm_init(void) {}
 __weak void pinmux_init(void) {}
 __weak void pin_mux_usb(void) {}
 __weak void pin_mux_spi(void) {}
@@ -95,6 +97,8 @@ int board_init(void)
 	/* Do clocks and UART first so that printf() works */
 	clock_init();
 	clock_verify();
+
+	ap_pm_init();
 
 #ifdef CONFIG_TEGRA_SPI
 	pin_mux_spi();
