@@ -63,6 +63,11 @@ int tegra_get_chip(void);
  */
 int tegra_get_sku_info(void);
 
+/**
+ * Initialize power management for application processors
+ */
+void ap_pm_init(void);
+
 /* Do any chip-specific cache config */
 void config_cache(void);
 
