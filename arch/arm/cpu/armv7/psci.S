@@ -170,4 +170,23 @@ ENTRY(psci_cpu_off_common)
 	bx	lr
 ENDPROC(psci_cpu_off_common)
 
+ENTRY(psci_cpu_entry)
+	@ Set SMP bit
+	mrc	p15, 0, r0, c1, c0, 1		@ ACTLR
+	orr	r0, r0, #(1 << 6)		@ Set SMP bit
+	mcr	p15, 0, r0, c1, c0, 1		@ ACTLR
+	isb
+
+	bl	_nonsec_init
+	bl	psci_arch_init
+
+	adr	r0, _psci_target_pc
+	ldr	r0, [r0]
+	b	_do_nonsec_entry
+ENDPROC(psci_cpu_entry)
+
+.globl _psci_target_pc
+_psci_target_pc:
+	.word	0
+
 	.popsection
