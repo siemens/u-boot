@@ -37,4 +37,9 @@ struct flow_ctlr {
 /* FLOW_CTLR_CLUSTER_CONTROL_0 0x2c */
 #define ACTIVE_LP		(1 << 0)
 
+/* CPUn_CSR_0 */
+#define CSR_ENABLE		(1 << 0)
+#define CSR_IMMEDIATE_WAKE	(1 << 3)
+#define CSR_WAIT_WFI_SHIFT	8
+
 #endif	/*  _TEGRA124_FLOW_H_ */

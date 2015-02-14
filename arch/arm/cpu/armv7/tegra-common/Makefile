@@ -7,4 +7,5 @@
 # SPDX-License-Identifier:	GPL-2.0+
 #
 
+obj-$(CONFIG_ARMV7_PSCI) += psci.o
 obj-$(CONFIG_CMD_ENTERRCM) += cmd_enterrcm.o
