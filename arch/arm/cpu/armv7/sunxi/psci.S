@@ -214,6 +214,8 @@ psci_cpu_off:
 
 .globl	psci_arch_init
 psci_arch_init:
+	mov	r6, lr
+
 	movw	r4, #(GICD_BASE & 0xffff)
 	movt	r4, #(GICD_BASE >> 16)
 
@@ -240,16 +242,11 @@ psci_arch_init:
 	isb
 
 	armv7_get_cpu_id r4
-	mov	r5, #0x400		@ 1kB of stack per CPU
-	mul	r4, r4, r5
+	bl	psci_get_cpu_stack_top
+	mov	sp, r5
 
-	adr	r5, text_end		@ end of text
-	add	r5, r5, #0x2000		@ Skip two pages
-	lsr	r5, r5, #12		@ Align to start of page
-	lsl	r5, r5, #12
-	sub	sp, r5, r4		@ here's our stack!
+	bx	r6
 
-	bx	lr
-
-text_end:
+	.globl psci_text_end
+psci_text_end:
 	.popsection
