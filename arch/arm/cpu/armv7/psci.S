@@ -170,6 +170,20 @@ ENTRY(psci_cpu_off_common)
 	bx	lr
 ENDPROC(psci_cpu_off_common)
 
+@ expects CPU ID in r4 (will be overwritten) and returns stack top in r5
+ENTRY(psci_get_cpu_stack_top)
+	mov	r5, #0x400			@ 1kB of stack per CPU
+	mul	r4, r4, r5
+
+	ldr	r5, =psci_text_end		@ end of monitor text
+	add	r5, r5, #0x2000			@ Skip two pages
+	lsr	r5, r5, #12			@ Align to start of page
+	lsl	r5, r5, #12
+	sub	r5, r5, r4			@ here's our stack!
+
+	bx	lr
+ENDPROC(psci_get_cpu_stack_top)
+
 ENTRY(psci_cpu_entry)
 	@ Set SMP bit
 	mrc	p15, 0, r0, c1, c0, 1		@ ACTLR
