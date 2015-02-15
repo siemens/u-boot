@@ -51,11 +51,24 @@ ENTRY(psci_arch_init)
 
 	mrc	p15, 0, r4, c0, c0, 5	@ MPIDR
 	and	r4, r4, #7		@ number of CPUs in cluster
+
+	adr	r5, _sys_clock_freq
+	cmp	r4, #0
+
+	mrceq	p15, 0, r7, c14, c0, 0	@ read CNTFRQ from CPU0
+	streq	r7, [r5]
+
+	ldrne	r7, [r5]
+	mcrne	p15, 0, r7, c14, c0, 0	@ write CNTFRQ to CPU1..3
+
 	bl	psci_get_cpu_stack_top
 	mov	sp, r5
 
 	bx	r6
 ENDPROC(psci_arch_init)
+
+_sys_clock_freq:
+	.word
 
 ENTRY(psci_cpu_off)
 	bl psci_cpu_off_common
