@@ -17,6 +17,7 @@
 
 #include <config.h>
 #include <linux/linkage.h>
+#include <asm/macro.h>
 #include <asm/psci.h>
 
 	.pushsection ._secure.text, "ax"
@@ -179,6 +180,7 @@ ENTRY(psci_get_cpu_stack_top)
 	add	r5, r5, #0x2000			@ Skip two pages
 	lsr	r5, r5, #12			@ Align to start of page
 	lsl	r5, r5, #12
+	sub	r5, r5, #4			@ reserve 1 word for target PC
 	sub	r5, r5, r4			@ here's our stack!
 
 	bx	lr
@@ -193,13 +195,10 @@ ENTRY(psci_cpu_entry)
 
 	bl	_nonsec_init
 
-	adr	r0, _psci_target_pc
-	ldr	r0, [r0]
+	armv7_get_cpu_id r4
+	bl	psci_get_cpu_stack_top
+	ldr	r0, [r5]			@ target PC at stack top
 	b	_do_nonsec_entry
 ENDPROC(psci_cpu_entry)
-
-.globl _psci_target_pc
-_psci_target_pc:
-	.word	0
 
 	.popsection
