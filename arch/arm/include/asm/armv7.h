@@ -124,6 +124,7 @@ void v7_outer_cache_inval_range(u32 start, u32 end);
 #if defined(CONFIG_ARMV7_NONSEC) || defined(CONFIG_ARMV7_VIRT)
 
 int armv7_init_nonsec(void);
+int armv7_apply_memory_carveout(u64 *start, u64 *size);
 int armv7_update_dt(void *fdt);
 bool armv7_boot_nonsec(void);
 

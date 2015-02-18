@@ -31,6 +31,11 @@ int arch_fixup_fdt(void *blob)
 	for (bank = 0; bank < CONFIG_NR_DRAM_BANKS; bank++) {
 		start[bank] = bd->bi_dram[bank].start;
 		size[bank] = bd->bi_dram[bank].size;
+#if defined(CONFIG_ARMV7_NONSEC) || defined(CONFIG_ARMV7_VIRT)
+		ret = armv7_apply_memory_carveout(&start[bank], &size[bank]);
+		if (ret)
+			return ret;
+#endif
 	}
 
 	ret = fdt_fixup_memory_banks(blob, start, size, CONFIG_NR_DRAM_BANKS);
