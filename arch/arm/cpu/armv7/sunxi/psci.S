@@ -19,6 +19,7 @@
 
 #include <config.h>
 #include <asm/gic.h>
+#include <asm/macro.h>
 #include <asm/psci.h>
 #include <asm/arch/cpu.h>
 
@@ -315,8 +316,7 @@ psci_arch_init:
 	mcr	p15, 0, r5, c1, c1, 0	@ Write SCR
 	isb
 
-	mrc	p15, 0, r4, c0, c0, 5	@ MPIDR
-	and	r4, r4, #3		@ cpu number in cluster
+	armv7_get_cpu_id r4
 	mov	r5, #0x400		@ 1kB of stack per CPU
 	mul	r4, r4, r5
 

@@ -198,6 +198,13 @@ lr	.req	x30
 .endm
 #endif
 
+#else /* !CONFIG_ARM64 */
+
+.macro armv7_get_cpu_id rn
+	mrc	p15, 0, \rn, c0, c0, 5	/* read MPIDR */
+	and	\rn, \rn, #0xff		/* return CPU ID in cluster */
+.endm
+
 #endif /* CONFIG_ARM64 */
 
 #endif /* __ASSEMBLY__ */
