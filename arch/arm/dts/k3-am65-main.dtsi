@@ -13,6 +13,7 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 		ranges = <0x0 0x0 0x70000000 0x200000>;
+		u-boot,dm-spl;
 
 		atf-sram@0 {
 			reg = <0x0 0x20000>;
