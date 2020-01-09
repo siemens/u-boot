@@ -277,3 +277,15 @@
 &scm_conf {
 	u-boot,dm-spl;
 };
+
+&msmc_ram {
+	icssg0_sram: icssg0-sram@40000 {
+		reg = <0x40000 0x10000>;
+	};
+	icssg1_sram: icssg1-sram@50000 {
+		reg = <0x50000 0x10000>;
+	};
+	icssg2_sram: icssg2-sram@60000 {
+		reg = <0x60000 0x10000>;
+	};
+};
