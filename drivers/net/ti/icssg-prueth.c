@@ -254,12 +254,10 @@ static int icssg_update_link(struct prueth *priv)
 	bool gig_en = false, full_duplex = false;
 
 	if (phy->link) { /* link up */
-		if (phy->speed == 1000)
+		if (phy->speed == SPEED_1000)
 			gig_en = true;
-		if (phy->duplex == 0x1)
+		if (phy->duplex == DUPLEX_FULL)
 			full_duplex = true;
-		if (phy->speed == 100)
-			gig_en = false;
 		/* Set the RGMII cfg for gig en and full duplex */
 		icssg_update_rgmii_cfg(priv->miig_rt, gig_en, full_duplex,
 				       priv->slice);
