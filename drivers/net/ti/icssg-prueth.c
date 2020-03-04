@@ -71,6 +71,12 @@ enum prueth_port {
 /* CTRLMMR_ICSSG_RGMII_CTRL register bits */
 #define ICSSG_CTRL_RGMII_ID_MODE		BIT(24)
 
+/* Shutdown command to stop processing at firmware.
+ * Command format : 0x8101ss00. ss - sequence number. Currently not used
+ * by driver.
+ */
+#define ICSSG_SHUTDOWN_CMD		0x81010000
+
 /* pstate speed/duplex command to set speed and duplex settings
  * in firmware.
  * Command format : 0x8102ssPN. ss - sequence number: currently not
@@ -538,6 +544,10 @@ static void prueth_stop(struct udevice *dev)
 	struct prueth *priv = dev_get_priv(dev);
 
 	icssg_class_disable(priv->miig_rt, priv->slice);
+
+	/* Execute shutdown command at firmware */
+	if (icssg_execute_firmware_command(priv, ICSSG_SHUTDOWN_CMD))
+		dev_err(dev, "Error executing firmware shutdown cmd\n");
 
 	phy_shutdown(priv->phydev);
 
