@@ -202,6 +202,13 @@ static int icssg_phy_init(struct udevice *dev)
 		return -ENODEV;
 	}
 
+	/* disable unsupported features */
+	supported &= ~(PHY_10BT_FEATURES |
+			SUPPORTED_100baseT_Half |
+			SUPPORTED_1000baseT_Half |
+			SUPPORTED_Pause |
+			SUPPORTED_Asym_Pause);
+
 	phydev->supported &= supported;
 	phydev->advertising = phydev->supported;
 
