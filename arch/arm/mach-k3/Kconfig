@@ -150,4 +150,5 @@ config SYS_K3_SPL_ATF
 source "board/ti/am65x/Kconfig"
 source "board/ti/am64x/Kconfig"
 source "board/ti/j721e/Kconfig"
+source "board/siemens/iot2050/Kconfig"
 endif
