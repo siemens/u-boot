@@ -1,0 +1,341 @@
+// SPDX-License-Identifier: GPL-2.0
+/*
+ * Copyright (c) Siemens AG, 2018-2020
+ *
+ * Authors:
+ *   Le Jin <le.jin@siemens.com>
+ *   Jan Kiszka <jan.kiszk@siemens.com>
+ */
+
+#include "k3-am654.dtsi"
+#include <dt-bindings/pinctrl/k3.h>
+#include <dt-bindings/net/ti-dp83867.h>
+
+/ {
+	chosen {
+		stdout-path = "serial3:115200n8";
+		bootargs = "earlycon=ns16550a,mmio32,0x02800000";
+	};
+
+	aliases {
+		remoteproc0 = &mcu_r5fss0_core0;
+		remoteproc1 = &mcu_r5fss0_core1;
+		serial3 = &main_uart1;
+	};
+
+	reserved-memory {
+		#address-cells = <2>;
+		#size-cells = <2>;
+		ranges;
+		secure_ddr: secure_ddr@9e800000 {
+			reg = <0 0x9e800000 0 0x01800000>; /* for OP-TEE */
+			alignment = <0x1000>;
+			no-map;
+		};
+	};
+};
+
+&sdhci0 {
+	/*
+	 * Swap clock TISCI clock IDs between sdhci0 and sdhci1 to work
+	 * around an issue in System Firmware 2019.12a (and earlier) known
+	 * as SYSFW-3179.
+	 */
+	clocks =<&k3_clks 48 0>, <&k3_clks 48 1>;
+	assigned-clocks = <&k3_clks 48 1>;
+	assigned-clock-rates = <142860000>;
+};
+
+&cbass_main {
+	u-boot,dm-spl;
+
+	sdhci1: sdhci@04FA0000 {
+		compatible = "ti,am654-sdhci-5.1";
+		reg = <0x0 0x4FA0000 0x0 0x1000>,
+		      <0x0 0x4FB0000 0x0 0x400>;
+		power-domains = <&k3_pds 48 TI_SCI_PD_EXCLUSIVE>;
+		/*
+		 * Swap clock TISCI clock IDs between sdhci0 and sdhci1 to work
+		 * around an issue in System Firmware 2019.12a (and earlier)
+		 * known as SYSFW-3179.
+		 */
+		clocks = <&k3_clks 47 0>, <&k3_clks 47 1>;
+		clock-names = "clk_ahb", "clk_xin";
+		max-frequency = <25000000>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&main_mmc1_pins_default>;
+		sdhci-caps-mask = <0x7 0x200000>;
+		ti,otap-del-sel-legacy = <0x0>;
+		ti,otap-del-sel-mmc-hs = <0x0>;
+		ti,otap-del-sel-sd-hs = <0x0>;
+		ti,otap-del-sel-sdr12 = <0x0>;
+		ti,otap-del-sel-sdr25 = <0x0>;
+		ti,otap-del-sel-sdr50 = <0x8>;
+		ti,otap-del-sel-sdr104 = <0x7>;
+		ti,otap-del-sel-ddr50 = <0x4>;
+		ti,otap-del-sel-ddr52 = <0x4>;
+		ti,otap-del-sel-hs200 = <0x7>;
+		ti,trm-icp = <0x8>;
+		ti,driver-strength-ohm = <50>;
+		status = "okay";
+	};
+};
+
+&cbass_mcu {
+	u-boot,dm-spl;
+
+	gpio-leds {
+		compatible = "gpio-leds";
+		pinctrl-names = "default";
+		pinctrl-0 = <&led_pins_default>;
+		u-boot,dm-spl;
+
+		status-led-red {
+			gpios = <&wkup_gpio0 32 GPIO_ACTIVE_HIGH>;
+			label = "status-red";
+			u-boot,dm-spl;
+		};
+
+		status-led-green {
+			gpios = <&wkup_gpio0 24 GPIO_ACTIVE_HIGH>;
+			label = "status-green";
+			u-boot,dm-spl;
+		};
+	};
+};
+
+&wkup_pmx0 {
+	u-boot,dm-spl;
+
+	mcu_fss0_ospi0_pins_default: mcu_fss0_ospi0_pins_default {
+		pinctrl-single,pins = <
+			AM65X_WKUP_IOPAD(0x0000, PIN_OUTPUT, 0) /* (V1) MCU_OSPI0_CLK */
+			AM65X_WKUP_IOPAD(0x0008, PIN_INPUT, 0)	 /* (U2) MCU_OSPI0_DQS */
+			AM65X_WKUP_IOPAD(0x000c, PIN_OUTPUT, 0)  /* (U4) MCU_OSPI0_D0 */
+			AM65X_WKUP_IOPAD(0x0010, PIN_INPUT, 0)  /* (U5) MCU_OSPI0_D1 */
+			AM65X_WKUP_IOPAD(0x002c, PIN_OUTPUT, 0) /* (R4) MCU_OSPI0_CSn0 */
+		>;
+		u-boot,dm-spl;
+	};
+
+	wkup_i2c0_pins_default: wkup-i2c0-pins-default {
+		pinctrl-single,pins = <
+			AM65X_WKUP_IOPAD(0x00e0, PIN_INPUT, 0) /* (AC7) WKUP_I2C0_SCL */
+			AM65X_WKUP_IOPAD(0x00e4, PIN_INPUT, 0) /* (AD6) WKUP_I2C0_SDA */
+		>;
+	};
+
+	mcu_i2c0_pins_default: mcu_i2c0_pins_default {
+		pinctrl-single,pins = <
+			AM65X_WKUP_IOPAD(0x00e8, PIN_INPUT, 0) /* (AD8) MCU_I2C0_SCL */
+			AM65X_WKUP_IOPAD(0x00ec, PIN_INPUT, 0) /* (AD7) MCU_I2C0_SDA */
+		>;
+	};
+
+	led_pins_default: led_pins_default {
+		pinctrl-single,pins = <
+			AM65X_WKUP_IOPAD(0x0050, PIN_OUTPUT, 7) /* (N2) WKUP_GPIO0_32 STATUS RED   LED */
+			AM65X_WKUP_IOPAD(0x0028, PIN_OUTPUT, 7) /* (R3) WKUP_GPIO0_22 USER   GREEN LED */
+			AM65X_WKUP_IOPAD(0x0030, PIN_OUTPUT, 7) /* (R5) WKUP_GPIO0_24 STATUS GREEN LED */
+		>;
+	};
+};
+
+&main_pmx0 {
+	u-boot,dm-spl;
+
+	main_uart1_pins_default: main_uart1_pins_default {
+		pinctrl-single,pins = <
+			AM65X_IOPAD(0x0174, PIN_INPUT, 6)	/* (AE23) UART1_RXD */
+			AM65X_IOPAD(0x014c, PIN_OUTPUT, 6)	/* (AD23) UART1_TXD */
+			AM65X_IOPAD(0x0178, PIN_INPUT, 6)	/* (AD22) UART1_CTSn */
+			AM65X_IOPAD(0x017c, PIN_OUTPUT, 6)	/* (AC21) UART1_RTSn */
+		>;
+		u-boot,dm-spl;
+	};
+
+	usb0_pins_default: usb0_pins_default {
+		pinctrl-single,pins = <
+			AM65X_IOPAD(0x02bc, PIN_OUTPUT, 0) /* (AD9) USB0_DRVVBUS */
+		>;
+	};
+
+	usb1_pins_default: usb1_pins_default {
+		pinctrl-single,pins = <
+			AM65X_IOPAD(0x02c0, PIN_OUTPUT, 0) /* (AC8) USB1_DRVVBUS */
+		>;
+	};
+
+	main_i2c2_pins_default: main-i2c2-pins-default {
+		pinctrl-single,pins = <
+			AM65X_IOPAD(0x0074, PIN_INPUT, 5) /* (T27) GPMC0_CSn3.I2C2_SCL */
+			AM65X_IOPAD(0x0070, PIN_INPUT, 5) /* (R25) GPMC0_CSn2.I2C2_SDA */
+		>;
+	};
+
+	main_mmc1_pins_default: main_mmc1_pins_default {
+		pinctrl-single,pins = <
+			AM65X_IOPAD(0x02d4, PIN_INPUT_PULLDOWN, 0)	/* (C27) MMC1_CLK */
+			AM65X_IOPAD(0x02d8, PIN_INPUT_PULLUP, 0)	/* (C28) MMC1_CMD */
+			AM65X_IOPAD(0x02d0, PIN_INPUT_PULLUP, 0)	/* (D28) MMC1_DAT0 */
+			AM65X_IOPAD(0x02cc, PIN_INPUT_PULLUP, 0)	/* (E27) MMC1_DAT1 */
+			AM65X_IOPAD(0x02c8, PIN_INPUT_PULLUP, 0)	/* (D26) MMC1_DAT2 */
+			AM65X_IOPAD(0x02c4, PIN_INPUT_PULLUP, 0)	/* (D27) MMC1_DAT3 */
+			AM65X_IOPAD(0x02dc, PIN_INPUT_PULLUP, 0)	/* (B24) MMC1_SDCD */
+			AM65X_IOPAD(0x02e0, PIN_INPUT, 0)			/* (C24) MMC1_SDWP */
+		>;
+	};
+};
+
+&main_pmx1 {
+	main_i2c0_pins_default: main-i2c0-pins-default {
+		pinctrl-single,pins = <
+			AM65X_IOPAD(0x0000, PIN_INPUT, 0) /* (D20) I2C0_SCL */
+			AM65X_IOPAD(0x0004, PIN_INPUT, 0) /* (C21) I2C0_SDA */
+		>;
+	};
+
+	main_i2c1_pins_default: main-i2c1-pins-default {
+		pinctrl-single,pins = <
+			AM65X_IOPAD(0x0008, PIN_INPUT, 0) /* (B21) I2C1_SCL */
+			AM65X_IOPAD(0x000c, PIN_INPUT, 0) /* (E21) I2C1_SDA */
+		>;
+	};
+};
+
+&dwc3_0 {
+	status = "okay";
+};
+
+&usb0_phy {
+	status = "okay";
+};
+
+&usb0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&usb0_pins_default>;
+	dr_mode = "host";
+};
+
+&dwc3_1 {
+	status = "okay";
+};
+
+&usb1_phy {
+	status = "okay";
+};
+
+&usb1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&usb1_pins_default>;
+	dr_mode = "host";
+};
+
+&wkup_i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&wkup_i2c0_pins_default>;
+	clock-frequency = <400000>;
+};
+
+&mcu_i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcu_i2c0_pins_default>;
+	clock-frequency = <400000>;
+};
+
+&main_i2c0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&main_i2c0_pins_default>;
+	clock-frequency = <400000>;
+	eeprom: eeprom@54 {
+		compatible = "atmel,24c08";
+		reg = <0x54>;
+		pagesize = <16>;
+	};
+};
+
+&main_i2c1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&main_i2c1_pins_default>;
+	clock-frequency = <400000>;
+};
+
+&main_i2c2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&main_i2c2_pins_default>;
+	clock-frequency = <400000>;
+};
+
+&ospi0 {
+	status = "okay";
+	pinctrl-names = "default";
+	pinctrl-0 = <&mcu_fss0_ospi0_pins_default>;
+	u-boot,dm-spl;
+
+	flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0x0>;
+		spi-tx-bus-width = <1>;
+		spi-rx-bus-width = <1>;
+		spi-max-frequency = <33333334>;
+		cdns,tshsl-ns = <60>;
+		cdns,tsd2d-ns = <60>;
+		cdns,tchsh-ns = <60>;
+		cdns,tslch-ns = <60>;
+		cdns,read-delay = <0>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		u-boot,dm-spl;
+	};
+};
+
+&cbass_wakeup {
+	u-boot,dm-spl;
+
+	wkup_gpio0: wkup_gpio0@42110000 {
+		compatible = "ti,k2g-gpio", "ti,keystone-gpio";
+		reg = <0x42110000 0x100>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		ti,ngpio = <56>;
+		ti,davinci-gpio-unbanked = <0>;
+		clocks = <&k3_clks 59 0>;
+		clock-names = "gpio";
+		u-boot,dm-spl;
+	};
+};
+
+&secure_proxy_main {
+	u-boot,dm-spl;
+};
+
+&dmsc {
+	u-boot,dm-spl;
+	k3_sysreset: sysreset-controller {
+		compatible = "ti,sci-sysreset";
+		u-boot,dm-spl;
+	};
+};
+
+&k3_pds {
+	u-boot,dm-spl;
+};
+
+&k3_clks {
+	u-boot,dm-spl;
+};
+
+&k3_reset {
+	u-boot,dm-spl;
+};
+
+&main_uart1 {
+	u-boot,dm-spl;
+	pinctrl-names = "default";
+	pinctrl-0 = <&main_uart1_pins_default>;
+	status = "okay";
+};
+
+&fss {
+	u-boot,dm-spl;
+};

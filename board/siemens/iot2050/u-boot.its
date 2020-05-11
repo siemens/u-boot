@@ -1,0 +1,58 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright (c) Siemens AG, 2020
+ *
+ * Authors:
+ *   Jan Kiszka <jan.kiszka@siemens.com>
+ */
+/dts-v1/;
+
+/ {
+	description = "U-Boot for IOT2050";
+	#address-cells = <0x1>;
+
+	images {
+		u-boot {
+			description = "U-Boot";
+			type = "standalone";
+			arch = "arm64";
+			os = "u-boot";
+			compression = "none";
+			load = <0x80800000>;
+			entry = <0x80800000>;
+			data = /incbin/("u-boot-nodtb.bin");
+		};
+
+		fdt-iot2050-basic {
+			description = "iot2050-basic.dtb";
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			data = /incbin/("arch/arm/dts/iot2050-basic.dtb");
+		};
+
+		fdt-iot2050-advanced {
+			description = "iot2050-advanced.dtb";
+			type = "flat_dt";
+			arch = "arm64";
+			compression = "none";
+			data = /incbin/("arch/arm/dts/iot2050-advanced.dtb");
+		};
+	};
+
+	configurations {
+		default = "conf-iot2050-basic";
+	
+		conf-iot2050-basic {
+			description = "iot2050-basic";
+			firmware = "u-boot";
+			fdt = "fdt-iot2050-basic";
+		};
+
+		conf-iot2050-advanced {
+			description = "iot2050-advanced";
+			firmware = "u-boot";
+			fdt = "fdt-iot2050-advanced";
+		};
+	};
+};
