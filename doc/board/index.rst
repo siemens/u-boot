@@ -19,6 +19,7 @@ Board-specific doc
    kontron/index
    microchip/index
    rockchip/index
+   siemens/index
    sifive/index
    sipeed/index
    st/index
