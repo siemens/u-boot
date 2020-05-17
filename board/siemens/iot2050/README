@@ -27,6 +27,10 @@ The following binaries from that source need to be present in the build folder:
  - sysfw.itb_HS
  - sysfw_sr2.itb
  - sysfw_sr2.itb_HS
+ - am65x-pru0-prueth-fw.elf
+ - am65x-pru1-prueth-fw.elf
+ - am65x-rtu0-prueth-fw.elf
+ - am65x-rtu1-prueth-fw.elf
 
 
 Building
