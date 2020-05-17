@@ -26,14 +26,20 @@
 /* U-Boot general configuration */
 #define EXTRA_ENV_IOT2050_BOARD_SETTINGS				\
 	"loadaddr=0x80080000\0"						\
+	"pxefile_addr_r=0x80080000\0"					\
 	"scriptaddr=0x83000000\0"					\
 	"kernel_addr_r=0x80080000\0"					\
 	"ramdisk_addr_r=0x81000000\0"					\
 	"fdt_addr_r=0x82000000\0"					\
 	"overlay_addr_r=0x83000000\0"					\
+	"load_icssg0_pru1_fw=sf read $loadaddr 0x7d0000 0x8000; rproc load 4 $loadaddr 0x8000\0" \
+	"load_icssg0_rtu1_fw=sf read $loadaddr 0x7f0000 0x8000; rproc load 5 $loadaddr 0x8000\0" \
+	"init_icssg0=rproc init; sf probe; run load_icssg0_pru1_fw; run load_icssg0_rtu1_fw\0" \
 	"usb_pgood_delay=900\0"
 
 #ifndef CONFIG_SPL_BUILD
+
+#define BOOTENV_RUN_NET_PLATFORM_START	"run init_icssg0; "
 
 /*
  * This defines all MMC devices, even if the basic variant has no mmc1.
@@ -45,7 +51,9 @@
 	func(MMC, mmc, 0) \
 	func(USB, usb, 0) \
 	func(USB, usb, 1) \
-	func(USB, usb, 2)
+	func(USB, usb, 2) \
+	func(PXE, pxe, na) \
+	func(DHCP, dhcp, na)
 
 #include <config_distro_bootcmd.h>
 

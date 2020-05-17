@@ -101,5 +101,22 @@
 			offset = <0x740000>;
 			filename = "sysfw.itb_HS";
 		};
+
+		blob-ext@0x7c0000 {
+			offset = <0x7c0000>;
+			filename = "am65x-pru0-prueth-fw.elf";
+		};
+		blob-ext@0x7d0000 {
+			offset = <0x7d0000>;
+			filename = "am65x-pru1-prueth-fw.elf";
+		};
+		blob-ext@0x7e0000 {
+			offset = <0x7e0000>;
+			filename = "am65x-rtu0-prueth-fw.elf";
+		};
+		blob-ext@0x7f0000 {
+			offset = <0x7f0000>;
+			filename = "am65x-rtu1-prueth-fw.elf";
+		};
 	};
 };
