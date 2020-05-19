@@ -387,13 +387,50 @@ static int icssg_update_link(struct prueth *priv)
 	return phy->link;
 }
 
+static int prueth_get_rproc_id(struct udevice *dev, int pru_index, int *pru_id)
+{
+	struct udevice *rproc_dev;
+	u32 phandle, err;
+	ofnode node;
+
+	err = ofnode_read_u32_index(dev_ofnode(dev), "prus", pru_index,
+				    &phandle);
+	if (err)
+		return err;
+
+	node = ofnode_get_by_phandle(phandle);
+	if (!ofnode_valid(node))
+		return -EINVAL;
+
+	err = uclass_get_device_by_ofnode(UCLASS_REMOTEPROC, node, &rproc_dev);
+	if (err)
+		return err;
+
+	*pru_id = rproc_dev->seq;
+
+	return 0;
+}
+
 static int prueth_start(struct udevice *dev)
 {
 	struct ti_udma_drv_chan_cfg_data *dma_rx_cfg_data;
 	struct prueth *priv = dev_get_priv(dev);
 	struct eth_pdata *pdata = dev->platdata;
-	int ret, i;
+	int ret, i, id;
 	char chn_name[16];
+
+	if (!rproc_is_initialized())
+		return -ENODEV;
+
+	for (i = 0; i < 2; i++) {
+		ret = prueth_get_rproc_id(dev, 2 * priv->slice + i, &id);
+		if (ret)
+			return ret;
+
+		ret = rproc_start(id);
+		if (ret)
+			return ret;
+	}
 
 	icssg_class_set_mac_addr(priv->miig_rt, priv->slice,
 				 (u8 *)pdata->enetaddr);
