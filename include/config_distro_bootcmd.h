@@ -307,6 +307,10 @@
 	BOOT_TARGET_DEVICES_references_VIRTIO_without_CONFIG_CMD_VIRTIO
 #endif
 
+#ifndef BOOTENV_RUN_NET_PLATFORM_START
+#define BOOTENV_RUN_NET_PLATFORM_START
+#endif
+
 #if defined(CONFIG_CMD_DHCP)
 #if defined(CONFIG_EFI_LOADER)
 /* http://www.iana.org/assignments/dhcpv6-parameters/dhcpv6-parameters.xml */
@@ -366,6 +370,7 @@
 	"bootcmd_dhcp=" \
 		BOOTENV_RUN_NET_USB_START \
 		BOOTENV_RUN_PCI_ENUM \
+		BOOTENV_RUN_NET_PLATFORM_START \
 		"if dhcp ${scriptaddr} ${boot_script_dhcp}; then " \
 			"source ${scriptaddr}; " \
 		"fi;" \
@@ -385,6 +390,7 @@
 	"bootcmd_pxe=" \
 		BOOTENV_RUN_NET_USB_START \
 		BOOTENV_RUN_PCI_ENUM \
+		BOOTENV_RUN_NET_PLATFORM_START \
 		"dhcp; " \
 		"if pxe get; then " \
 			"pxe boot; " \
