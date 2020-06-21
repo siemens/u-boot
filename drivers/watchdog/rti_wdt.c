@@ -14,6 +14,7 @@
 #include <power-domain.h>
 #include <wdt.h>
 #include <asm/io.h>
+#include <remoteproc.h>
 
 /* Timer register set definition */
 #define RTIDWDCTRL		0x90
@@ -42,14 +43,49 @@ struct rti_wdt_priv {
 	unsigned int clk_khz;
 };
 
+extern const u32 rti_wdt_fw[];
+extern const int rti_wdt_fw_size;
+
 static int rti_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 {
+#ifdef CONFIG_WDT_K3_RTI_LOAD_FW
+	struct udevice *rproc_dev;
+	ofnode node;
+#endif
 	struct rti_wdt_priv *priv = dev_get_priv(dev);
 	u32 timer_margin;
 	int ret;
 
 	if (readl(priv->regs + RTIDWDCTRL) == WDENABLE_KEY)
 		return -EBUSY;
+
+#ifdef CONFIG_WDT_K3_RTI_LOAD_FW
+	node = ofnode_by_compatible(ofnode_null(), "ti,am654-r5f");
+	if (!ofnode_valid(node)) {
+		dev_err(dev, "No compatible firmware target processor found\n");
+		return -ENODEV;
+	}
+
+	ret = uclass_get_device_by_ofnode(UCLASS_REMOTEPROC, node, &rproc_dev);
+	if (ret)
+		return ret;
+
+	ret = rproc_dev_init(rproc_dev->seq);
+	if (ret) {
+	    fw_error:
+		dev_err(dev, "Failed to load watchdog firmware into remote processor %d\n",
+			rproc_dev->seq);
+		return ret;
+	}
+
+	ret = rproc_load(rproc_dev->seq, (ulong)rti_wdt_fw, rti_wdt_fw_size);
+	if (ret)
+		goto fw_error;
+
+	ret = rproc_start(rproc_dev->seq);
+	if (ret)
+		goto fw_error;
+#endif
 
 	timer_margin = timeout_ms * priv->clk_khz / 1000;
 	timer_margin >>= WDT_PRELOAD_SHIFT;
