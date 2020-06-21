@@ -14,6 +14,7 @@
 #include <power-domain.h>
 #include <wdt.h>
 #include <asm/io.h>
+#include <remoteproc.h>
 
 /* Timer register set definition */
 #define RTIDWDCTRL		0x90
@@ -37,11 +38,16 @@
 
 #define WDT_PRELOAD_MAX		0xfff
 
+#define RTI_PROC_ID		0
+
 struct rti_wdt_priv {
 	phys_addr_t regs;
 	unsigned int clk_khz;
 	struct power_domain pwrdmn;
 };
+
+extern const u32 rti_wdt_fw[];
+extern const int rti_wdt_fw_size;
 
 static int rti_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 {
@@ -57,6 +63,24 @@ static int rti_wdt_start(struct udevice *dev, u64 timeout_ms, ulong flags)
 
 	if (readl(priv->regs + RTIDWDCTRL) == WDENABLE_KEY)
 		return -EBUSY;
+
+#ifdef CONFIG_WDT_K3_RTI_LOAD_FW
+	ret = rproc_dev_init(RTI_PROC_ID);
+	if (ret) {
+	    fw_error:
+		dev_err(dev, "Failed to load watchdog firmware into remote processor %d\n",
+			RTI_PROC_ID);
+		return ret;
+	}
+
+	ret = rproc_load(RTI_PROC_ID, (ulong)rti_wdt_fw, rti_wdt_fw_size);
+	if (ret)
+		goto fw_error;
+
+	ret = rproc_start(RTI_PROC_ID);
+	if (ret)
+		goto fw_error;
+#endif
 
 	timer_margin = timeout_ms * priv->clk_khz / 1000;
 	timer_margin >>= WDT_PRELOAD_SHIFT;
