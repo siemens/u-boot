@@ -12,6 +12,8 @@ LIBFDT_SRCS = fdt.c fdt_ro.c fdt_wip.c fdt_sw.c fdt_rw.c fdt_strerror.c fdt_empt
 LIBFDT_OBJS = $(LIBFDT_SRCS:%.c=%.o)
 LIBFDT_LIB = libfdt-$(DTC_VERSION).$(SHAREDLIB_EXT)
 
+HOSTCFLAGS += -Wno-sign-compare
+
 libfdt_clean:
 	@$(VECHO) CLEAN "(libfdt)"
 	rm -f $(STD_CLEANFILES:%=$(LIBFDT_dir)/%)
