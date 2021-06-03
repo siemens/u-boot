@@ -4,6 +4,7 @@
  *
  * Authors:
  *   Jan Kiszka <jan.kiszk@siemens.com>
+ *   Chao Zeng <chao.zeng@siemens.com>
  */
 
 #include <config.h>
@@ -12,7 +13,7 @@
 	binman {
 		filename = "flash.bin";
 		pad-byte = <0xff>;
-		size = <0x800000>;
+		size = <0x900000>;
 
 		blob-ext@0x000000 {
 			offset = <0x000000>;
@@ -91,15 +92,25 @@
 			fill-byte = [00];
 		};
 
-		/* Sysfw Basic */
+		/* PG1 sysfw, basic variant */
 		blob-ext@0x6c0000 {
 			offset = <0x6c0000>;
 			filename = "sysfw.itb";
 		};
-		/* Sysfw Advanced */
+		/* PG1 sysfw, advanced variant */
 		blob-ext@0x740000 {
 			offset = <0x740000>;
 			filename = "sysfw.itb_HS";
+		};
+		/* PG2 sysfw, basic variant */
+		blob-ext@0x7c0000 {
+			offset = <0x7c0000>;
+			filename = "sysfw_sr2.itb";
+		};
+		/* PG2 sysfw, advanced variant */
+		blob-ext@0x840000 {
+			offset = <0x840000>;
+			filename = "sysfw_sr2.itb_HS";
 		};
 	};
 };

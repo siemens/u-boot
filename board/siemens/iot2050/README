@@ -25,6 +25,8 @@ The following binaries from that source need to be present in the build folder:
  - tiboot3.bin
  - sysfw.itb
  - sysfw.itb_HS
+ - sysfw_sr2.itb
+ - sysfw_sr2.itb_HS
 
 
 Building
