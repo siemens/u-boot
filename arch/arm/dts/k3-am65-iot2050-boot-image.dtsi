@@ -13,7 +13,7 @@
 	binman {
 		filename = "flash.bin";
 		pad-byte = <0xff>;
-		size = <0x900000>;
+		size = <0x960000>;
 
 		blob-ext@0x000000 {
 			offset = <0x000000>;
@@ -128,6 +128,30 @@
 		blob-ext@0x8f0000 {
 			offset = <0x8f0000>;
 			filename = "am65x-rtu1-prueth-fw.elf";
+		};
+		blob-ext@0x900000 {
+			offset = <0x900000>;
+			filename = "am65x-sr2-pru0-prueth-fw.elf";
+		};
+		blob-ext@0x910000 {
+			offset = <0x910000>;
+			filename = "am65x-sr2-pru1-prueth-fw.elf";
+		};
+		blob-ext@0x920000 {
+			offset = <0x920000>;
+			filename = "am65x-sr2-rtu0-prueth-fw.elf";
+		};
+		blob-ext@0x930000 {
+			offset = <0x930000>;
+			filename = "am65x-sr2-rtu1-prueth-fw.elf";
+		};
+		blob-ext@0x940000 {
+			offset = <0x940000>;
+			filename = "am65x-sr2-txpru0-prueth-fw.elf";
+		};
+		blob-ext@0x950000 {
+			offset = <0x950000>;
+			filename = "am65x-sr2-txpru1-prueth-fw.elf";
 		};
 	};
 };
