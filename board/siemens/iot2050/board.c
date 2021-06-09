@@ -16,6 +16,7 @@
 #include <net.h>
 #include <phy.h>
 #include <spl.h>
+#include <soc.h>
 #include <version.h>
 #include <linux/delay.h>
 #include <asm/arch/sys_proto.h>
@@ -54,6 +55,19 @@ static bool board_is_advanced(void)
 		!strcmp((char *)info->name, "IOT2050-ADVANCED");
 }
 
+static bool board_is_sr1(void)
+{
+	char name[SOC_MAX_STR_SIZE];
+	struct udevice *soc;
+
+	if (soc_get(&soc) || soc_get_revision(soc, name, sizeof(name))) {
+		pr_err("IOT2050: Unable to retrieve SOC revision, assuming SR1!\n");
+		return true;
+	}
+
+	return strcmp(name, "SR1.0") == 0;
+}
+
 static void remove_mmc1_target(void)
 {
 	const char *boot_targets = env_get("boot_targets");
@@ -66,6 +80,7 @@ void set_board_info_env(void)
 {
 	struct iot2050_info *info = IOT2050_INFO_DATA;
 	u8 __maybe_unused mac_cnt;
+	const char *fdtfile;
 
 	if (info->magic != IOT2050_INFO_MAGIC) {
 		pr_err("IOT2050: Board info parsing error!\n");
@@ -100,12 +115,19 @@ void set_board_info_env(void)
 	}
 
 	if (board_is_advanced()) {
-		env_set("fdtfile", "ti/k3-am6548-iot2050-advanced.dtb");
+		if (board_is_sr1())
+			fdtfile = "ti/k3-am6548-iot2050-advanced.dtb";
+		else
+			fdtfile = "ti/k3-am6548-iot2050-advanced-pg2.dtb";
 	} else {
-		env_set("fdtfile", "ti/k3-am6528-iot2050-basic.dtb");
+		if (board_is_sr1())
+			fdtfile = "ti/k3-am6528-iot2050-basic.dtb";
+		else
+			fdtfile = "ti/k3-am6528-iot2050-basic-pg2.dtb";
 		/* remove the unavailable eMMC (mmc1) from the list */
 		remove_mmc1_target();
 	}
+	env_set("fdtfile", fdtfile);
 
 	env_save();
 }
