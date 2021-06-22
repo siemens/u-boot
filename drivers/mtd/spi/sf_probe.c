@@ -109,6 +109,11 @@ static int spi_flash_std_write(struct udevice *dev, u32 offset, size_t len,
 	struct mtd_info *mtd = &flash->mtd;
 	size_t retlen;
 
+	if (flash->flash_is_locked && flash->flash_is_locked(flash, offset, len)) {
+		debug("SF: Flash is locked\n");
+		return -ENOPROTOOPT;
+	}
+
 	return mtd->_write(mtd, offset, len, &retlen, buf);
 }
 
@@ -126,6 +131,11 @@ static int spi_flash_std_erase(struct udevice *dev, u32 offset, size_t len)
 	memset(&instr, 0, sizeof(instr));
 	instr.addr = offset;
 	instr.len = len;
+
+	if (flash->flash_is_locked && flash->flash_is_locked(flash, offset, len)) {
+		debug("SF: Flash is locked\n");
+		return -ENOPROTOOPT;
+	}
 
 	return mtd->_erase(mtd, &instr);
 }
