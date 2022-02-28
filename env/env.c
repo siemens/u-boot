@@ -133,6 +133,28 @@ __weak enum env_location arch_env_get_location(enum env_operation op, int prio)
 	if (prio >= ARRAY_SIZE(env_locations))
 		return ENVL_UNKNOWN;
 
+	if (IS_ENABLED(CONFIG_ENV_WRITEABLE_LIST)) {
+		/*
+		 * In writeable-list mode, ENVL_NOWHERE gains highest prio by
+		 * virtually injecting it at prio 0.
+		 */
+		if (prio == 0) {
+			/*
+			 * Avoid the injection for write operations as that
+			 * would block it.
+			 */
+			if (op != ENVOP_SAVE && op != ENVOP_ERASE)
+				return ENVL_NOWHERE;
+		} else {
+			/*
+			 * always subtract 1, also for writing because
+			 * env_load_prio, which is used for writing, was
+			 * initialized with that offset.
+			 */
+			prio--;
+		}
+	}
+
 	return env_locations[prio];
 }
 
