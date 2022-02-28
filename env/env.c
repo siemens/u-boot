@@ -54,6 +54,13 @@ static struct env_driver *_env_driver_lookup(enum env_location loc)
 }
 
 static enum env_location env_locations[] = {
+#if defined(CONFIG_ENV_IS_NOWHERE) && defined(CONFIG_ENV_WRITEABLE_LIST)
+	/*
+	 * In writeable-list mode, the built-in env must have highest prio
+	 * while loading. This is achieved by moving ENVL_NOWHERE to the front.
+	 */
+	ENVL_NOWHERE,
+#endif
 #ifdef CONFIG_ENV_IS_IN_EEPROM
 	ENVL_EEPROM,
 #endif
@@ -87,7 +94,7 @@ static enum env_location env_locations[] = {
 #ifdef CONFIG_ENV_IS_IN_UBI
 	ENVL_UBI,
 #endif
-#ifdef CONFIG_ENV_IS_NOWHERE
+#if defined(CONFIG_ENV_IS_NOWHERE) && !defined(CONFIG_ENV_WRITEABLE_LIST)
 	ENVL_NOWHERE,
 #endif
 };
@@ -133,6 +140,14 @@ __weak enum env_location arch_env_get_location(enum env_operation op, int prio)
 	if (prio >= ARRAY_SIZE(env_locations))
 		return ENVL_UNKNOWN;
 
+#ifdef CONFIG_ENV_WRITEABLE_LIST
+	/*
+	 * In writeable-list mode, ENVL_NOWHERE gains highest prio. This blocks
+	 * writing, though. So return the location of the next prio instead.
+	 */
+	if ((op == ENVOP_SAVE || op == ENVOP_ERASE) && prio == 0)
+		prio++;
+#endif
 	return env_locations[prio];
 }
 
