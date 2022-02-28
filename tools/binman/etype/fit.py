@@ -212,6 +212,9 @@ class Entry_fit(Entry):
                                 if depth == 1 and in_images:
                                     fsw.property('data',
                                                  tools.ReadFile(fname))
+                                for subsubnode in subnode.subnodes:
+                                    with fsw.add_node(subsubnode.name):
+                                        _AddNode(subnode, depth + 1, subsubnode)
                     else:
                         if self._fdts is None:
                             if self._fit_list_prop:
