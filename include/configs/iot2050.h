@@ -15,6 +15,14 @@
 
 /* SPL Loader Configuration */
 
+#define WATCHDOG_ENV							\
+	"watchdog_timeout_ms=" __stringify(CONFIG_WATCHDOG_TIMEOUT_MSECS) "\0" \
+	"start_watchdog=if test ${watchdog_timeout_ms} -gt 0; then "	\
+		"wdt dev watchdog@40610000; "				\
+		"wdt start ${watchdog_timeout_ms}; "			\
+		"echo Watchdog started, timeout ${watchdog_timeout_ms} ms; " \
+		"fi\0"
+
 /* U-Boot general configuration */
 #define EXTRA_ENV_IOT2050_BOARD_SETTINGS				\
 	"usb_pgood_delay=900\0"
@@ -43,6 +51,7 @@
 #define CONFIG_EXTRA_ENV_SETTINGS					\
 	DEFAULT_LINUX_BOOT_ENV						\
 	BOOTENV								\
+	WATCHDOG_ENV							\
 	EXTRA_ENV_IOT2050_BOARD_SETTINGS
 
 #include <configs/ti_armv7_common.h>
