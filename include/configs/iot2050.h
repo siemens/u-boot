@@ -56,4 +56,12 @@
 
 #include <configs/ti_armv7_common.h>
 
+#ifdef CONFIG_ENV_WRITEABLE_LIST
+/* relevant for secure boot with CONFIG_ENV_WRITEABLE_LIST=y */
+#define CONFIG_ENV_FLAGS_LIST_STATIC					\
+	"board_uuid:sw,board_name:sw,board_serial:sw,board_a5e:sw,"	\
+	"mlfb:sw,fw_version:sw,seboot_version:sw,"			\
+	"eth1addr:mw,eth2addr:mw,watchdog_timeout_ms:dw,boot_targets:sw"
+#endif
+
 #endif /* __CONFIG_IOT2050_H */
