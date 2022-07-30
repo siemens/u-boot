@@ -755,8 +755,12 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
 	 */
 	if (os_takes_devicetree(spl_image->os)) {
 		ret = spl_fit_append_fdt(spl_image, info, sector, &ctx);
-		if (ret < 0 && spl_image->os != IH_OS_U_BOOT)
-			return ret;
+		if (ret < 0) {
+			if (spl_image->os != IH_OS_U_BOOT)
+				return ret;
+			else if (!IS_ENABLED(CONFIG_OF_EMBED))
+				return ret;
+		}
 	}
 
 	firmware_node = node;
