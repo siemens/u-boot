@@ -14,6 +14,7 @@
 #include <i2c.h>
 #include <led.h>
 #include <malloc.h>
+#include <mapmem.h>
 #include <net.h>
 #include <phy.h>
 #include <spl.h>
@@ -48,87 +49,77 @@ struct iot2050_info {
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define M2_CFG_PIN_NUM    4
-#define PCIE_MUX_CTRL_NUM 3
-
-static char *fdt_fix_string;
-
 struct gpio_config {
-	char *label;
-	char *gpio_name;
+	const char *gpio_name;
+	const char *label;
 };
 
-enum serdes0_supported_interface {
-	USB30 = 0,
-	PCIE0_LANE0,
-	SGMII_LANE0,
-};
-
-enum serdes1_supported_interface {
-	PCIE1_LANE0 = 0,
-	PCIE0_LANE1,
-	SGMII_LANE1,
-};
-
-enum m2_connector_combination_type {
+enum m2_connector_mode {
 	BKEY_PCIEX2_EKEY_NONE = 0,
 	BKEY_PCIE_EKEY_PCIE,
 	BKEY_USB30_EKEY_PCIE,
+	CONNECTOR_MODE_INVALID
 };
 
-struct serdes_combination {
-	enum m2_connector_combination_type m2_connector_type;
-	enum serdes0_supported_interface  serdes0_interface;
-	enum serdes1_supported_interface  serdes1_interface;
+struct m2_config_pins {
+	int config[4];
 };
 
-/* definition is from M.2 Spec */
-struct m2_device_config_decodes {
-	char config_0;
-	char config_1;
-	char config_2;
-	char config_3;
-};
-
-struct serdes_mux_control_pin {
-	char ctrl_usb30_pcie0_lane0;
-	char ctrl_pcie1_pcie0;
-	char ctrl_usb30_pcie0_lane1;
+struct serdes_mux_control {
+	int ctrl_usb30_pcie0_lane0;
+	int ctrl_pcie1_pcie0;
+	int ctrl_usb30_pcie0_lane1;
 };
 
 struct m2_config_table {
-	struct m2_device_config_decodes	m2_config_decodes;
-	struct serdes_mux_control_pin serdes_mux_ctrl_pin;
-	struct serdes_combination serdes_select;
+	struct m2_config_pins config_pins;
+	enum m2_connector_mode mode;
 };
 
-static struct gpio_config serdes_mux_ctl_pin_info[PCIE_MUX_CTRL_NUM] = {
-	{"CTRL_USB30_PCIE0_LANE0", "gpio@600000_88"},
-	{"CTRL_PCIE1_PCIE0",       "gpio@600000_82"},
-	{"CTRL_USB30_PCIE0_LANE1", "gpio@600000_89"},
+static const struct gpio_config serdes_mux_ctl_pin_info[] = {
+	{"gpio@600000_88", "CTRL_USB30_PCIE0_LANE0"},
+	{"gpio@600000_82", "CTRL_PCIE1_PCIE0"},
+	{"gpio@600000_89", "CTRL_USB30_PCIE0_LANE1"},
 };
 
-static struct gpio_config m2_bkey_cfg_pin_info[M2_CFG_PIN_NUM] = {
-	{"KEY_CONFIG_0", "gpio@601000_18"},
-	{"KEY_CONFIG_1", "gpio@601000_19"},
-	{"KEY_CONFIG_2", "gpio@601000_88"},
-	{"KEY_CONFIG_3", "gpio@601000_89"},
+static const struct gpio_config m2_bkey_cfg_pin_info[] = {
+	{"gpio@601000_18", "KEY_CONFIG_0"},
+	{"gpio@601000_19", "KEY_CONFIG_1"},
+	{"gpio@601000_88", "KEY_CONFIG_2"},
+	{"gpio@601000_89", "KEY_CONFIG_3"},
 };
 
-static struct m2_config_table m2_config_table[] = {
-	{{0, 1, 0, 0}, {0, 0, 1}, {BKEY_PCIEX2_EKEY_NONE, PCIE0_LANE0, PCIE0_LANE1}},
-	{{0, 0, 1, 0}, {0, 1, 0}, {BKEY_PCIE_EKEY_PCIE, PCIE0_LANE0, PCIE1_LANE0}},
-	{{0, 1, 1, 0}, {0, 1, 0}, {BKEY_PCIE_EKEY_PCIE, PCIE0_LANE0, PCIE1_LANE0}},
-	{{1, 0, 0, 1}, {0, 1, 0}, {BKEY_PCIE_EKEY_PCIE, PCIE0_LANE0, PCIE1_LANE0}},
-	{{1, 1, 0, 1}, {0, 1, 0}, {BKEY_PCIE_EKEY_PCIE, PCIE0_LANE0, PCIE1_LANE0}},
-	{{0, 0, 0, 1}, {1, 1, 0}, {BKEY_USB30_EKEY_PCIE, USB30, PCIE1_LANE0}},
-	{{0, 1, 0, 1}, {1, 1, 0}, {BKEY_USB30_EKEY_PCIE, USB30, PCIE1_LANE0}},
-	{{0, 0, 1, 1}, {1, 1, 0}, {BKEY_USB30_EKEY_PCIE, USB30, PCIE1_LANE0}},
-	{{0, 1, 1, 1}, {1, 1, 0}, {BKEY_USB30_EKEY_PCIE, USB30, PCIE1_LANE0}},
-	{{1, 0, 1, 1}, {1, 1, 0}, {BKEY_USB30_EKEY_PCIE, USB30, PCIE1_LANE0}},
+static const struct m2_config_table m2_config_table[] = {
+	{{{0, 1, 0, 0}}, BKEY_PCIEX2_EKEY_NONE},
+	{{{0, 0, 1, 0}}, BKEY_PCIE_EKEY_PCIE},
+	{{{0, 1, 1, 0}}, BKEY_PCIE_EKEY_PCIE},
+	{{{1, 0, 0, 1}}, BKEY_PCIE_EKEY_PCIE},
+	{{{1, 1, 0, 1}}, BKEY_PCIE_EKEY_PCIE},
+	{{{0, 0, 0, 1}}, BKEY_USB30_EKEY_PCIE},
+	{{{0, 1, 0, 1}}, BKEY_USB30_EKEY_PCIE},
+	{{{0, 0, 1, 1}}, BKEY_USB30_EKEY_PCIE},
+	{{{0, 1, 1, 1}}, BKEY_USB30_EKEY_PCIE},
+	{{{1, 0, 1, 1}}, BKEY_USB30_EKEY_PCIE},
 };
 
-static struct gpio_config m2_enable_power = {"P3V3_M2_EN", "gpio@601000_17"};
+static const struct serdes_mux_control serdes_mux_ctrl[] = {
+	[BKEY_PCIEX2_EKEY_NONE] = {0, 0, 1},
+	[BKEY_PCIE_EKEY_PCIE]   = {0, 1, 0},
+	[BKEY_USB30_EKEY_PCIE]  = {1, 1, 0},
+};
+
+static const char *m2_connector_mode_name[] = {
+	[BKEY_PCIEX2_EKEY_NONE] = "2-lane PCIe (B-key)",
+	[BKEY_PCIE_EKEY_PCIE]   = "PCIe (B-key) / PCIe (E-key)",
+	[BKEY_USB30_EKEY_PCIE]  = "USB 3.0 (B-key) / PCIe (E-key)",
+};
+
+static enum m2_connector_mode connector_mode;
+
+#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
+static void *connector_overlay;
+static u32 connector_overlay_size;
+#endif
 
 static int get_pinvalue(const char *gpio_name, const char *label)
 {
@@ -136,8 +127,10 @@ static int get_pinvalue(const char *gpio_name, const char *label)
 
 	if (dm_gpio_lookup_name(gpio_name, &gpio) < 0 ||
 	    dm_gpio_request(&gpio, label) < 0 ||
-	    dm_gpio_set_dir_flags(&gpio, GPIOD_IS_IN) < 0)
-		return false;
+	    dm_gpio_set_dir_flags(&gpio, GPIOD_IS_IN) < 0) {
+		pr_err("Cannot get pin %s for M.2 configuration\n", gpio_name);
+		return 0;
+	}
 
 	return dm_gpio_get_value(&gpio);
 }
@@ -149,141 +142,19 @@ static void set_pinvalue(const char *gpio_name, const char *label, int value)
 	if (dm_gpio_lookup_name(gpio_name, &gpio) < 0 ||
 	    dm_gpio_request(&gpio, label) < 0 ||
 	    dm_gpio_set_dir_flags(&gpio, GPIOD_IS_OUT) < 0) {
-		pr_err("IOT2050: Cannot set pin for M.2 configuration\n");
+		pr_err("Cannot set pin %s for M.2 configuration\n", gpio_name);
 		return;
 	}
 	dm_gpio_set_value(&gpio, value);
 }
 
-static void get_m2_config_decodes(struct m2_device_config_decodes *decodes)
-{
-	decodes->config_0 = get_pinvalue(m2_bkey_cfg_pin_info[0].gpio_name,
-								    m2_bkey_cfg_pin_info[0].label);
-	decodes->config_1 = get_pinvalue(m2_bkey_cfg_pin_info[1].gpio_name,
-								    m2_bkey_cfg_pin_info[1].label);
-	decodes->config_2 = get_pinvalue(m2_bkey_cfg_pin_info[2].gpio_name,
-								    m2_bkey_cfg_pin_info[2].label);
-	decodes->config_3 = get_pinvalue(m2_bkey_cfg_pin_info[3].gpio_name,
-								    m2_bkey_cfg_pin_info[3].label);
-}
-
-static void get_serdes_combination(struct serdes_combination *serdes_combination,
-									int m2_connector_type)
-{
-	switch (m2_connector_type) {
-	case BKEY_PCIEX2_EKEY_NONE:
-		*serdes_combination = m2_config_table[0].serdes_select;
-		break;
-	case BKEY_PCIE_EKEY_PCIE:
-		*serdes_combination = m2_config_table[1].serdes_select;
-		break;
-	case BKEY_USB30_EKEY_PCIE:
-		*serdes_combination = m2_config_table[5].serdes_select;
-		break;
-	default:
-		*serdes_combination = m2_config_table[5].serdes_select;
-		break;
-	}
-}
-
-static void update_m2_load_info(struct serdes_combination serdes_combination, const char **fdt_name)
-{
-	if (serdes_combination.serdes0_interface == PCIE0_LANE0 &&
-		serdes_combination.serdes1_interface == PCIE0_LANE1) {
-		fdt_fix_string = "siemens,iot2050-advanced-m2-pciex2";
-		*fdt_name = "ti/k3-am6548-iot2050-advanced-m2-bkey-pciex2.dtb";
-	} else if (serdes_combination.serdes0_interface == USB30 &&
-			serdes_combination.serdes1_interface == PCIE0_LANE1) {
-		fdt_fix_string = "siemens,iot2050-advanced-m2-usb3-pcie";
-		*fdt_name = "ti/k3-am6548-iot2050-advanced-m2-bkey-usb3-ekey-pcie.dtb";
-	} else if (serdes_combination.serdes0_interface == PCIE0_LANE0 &&
-			serdes_combination.serdes1_interface == PCIE1_LANE0) {
-		fdt_fix_string = "siemens,iot2050-advanced-m2-pcie-pcie";
-		*fdt_name = "ti/k3-am6548-iot2050-advanced-m2-bkey-pcie-ekey-pcie.dtb";
-	} else {
-		fdt_fix_string = "siemens,iot2050-advanced-m2-usb3-pcie";
-		*fdt_name = "ti/k3-am6548-iot2050-advanced-m2-bkey-usb3-ekey-pcie.dtb";
-	}
-}
-
-static void get_serdes_mux_ctrl(struct serdes_mux_control_pin *serdes_mux_ctrl_info,
-				int m2_connector_type)
-{
-	switch (m2_connector_type) {
-	case BKEY_PCIEX2_EKEY_NONE:
-		*serdes_mux_ctrl_info = m2_config_table[0].serdes_mux_ctrl_pin;
-		break;
-	case BKEY_PCIE_EKEY_PCIE:
-		*serdes_mux_ctrl_info = m2_config_table[1].serdes_mux_ctrl_pin;
-		break;
-	case BKEY_USB30_EKEY_PCIE:
-		*serdes_mux_ctrl_info = m2_config_table[5].serdes_mux_ctrl_pin;
-		break;
-	default:
-		*serdes_mux_ctrl_info = m2_config_table[5].serdes_mux_ctrl_pin;
-		break;
-	}
-}
-
-static void configure_serdes_mux(struct serdes_combination serdes_selected_combination)
-{
-	struct serdes_mux_control_pin serdes_mux_ctrl_info;
-
-	get_serdes_mux_ctrl(&serdes_mux_ctrl_info, serdes_selected_combination.m2_connector_type);
-
-	set_pinvalue(serdes_mux_ctl_pin_info[0].gpio_name, serdes_mux_ctl_pin_info[0].label,
-				serdes_mux_ctrl_info.ctrl_usb30_pcie0_lane0);
-	set_pinvalue(serdes_mux_ctl_pin_info[1].gpio_name, serdes_mux_ctl_pin_info[1].label,
-				serdes_mux_ctrl_info.ctrl_pcie1_pcie0);
-	set_pinvalue(serdes_mux_ctl_pin_info[2].gpio_name, serdes_mux_ctl_pin_info[2].label,
-				serdes_mux_ctrl_info.ctrl_usb30_pcie0_lane1);
-}
-
-
-static void set_m2_load_info(const char **fdt_name)
-{
-	int i;
-	int config_table_size = ARRAY_SIZE(m2_config_table);
-	struct m2_device_config_decodes	config;
-	struct serdes_combination current_serdes_combination = {BKEY_USB30_EKEY_PCIE,
-								USB30, PCIE1_LANE0};
-	enum m2_connector_combination_type current_m2_connector_type;
-
-	if (env_get("m2_manual_config")) {
-		printf("Maunal Select M.2 Configuration\n");
-		current_m2_connector_type = simple_strtoul(env_get("m2_manual_config"), NULL, 10);
-		get_serdes_combination(&current_serdes_combination, current_m2_connector_type);
-	} else { /*auto detect*/
-		get_m2_config_decodes(&config);
-		for (i = 0; i < config_table_size; i++) {
-			if (!memcmp(&config, &m2_config_table[i].m2_config_decodes,
-						sizeof(struct m2_device_config_decodes))) {
-				current_serdes_combination =  m2_config_table[i].serdes_select;
-				break;
-			}
-		}
-	}
-
-	update_m2_load_info(current_serdes_combination, fdt_name);
-	configure_serdes_mux(current_serdes_combination);
-}
-
-/*
- * M.2 Board is a Variant Based On PG2 board
- */
 static bool board_is_m2(void)
 {
 	struct iot2050_info *info = IOT2050_INFO_DATA;
 
-	return info->magic == IOT2050_INFO_MAGIC &&
+	return IS_ENABLED(CONFIG_TARGET_IOT2050_A53_PG2) &&
+		info->magic == IOT2050_INFO_MAGIC &&
 		strcmp((char *)info->name, "IOT2050-ADVANCED-M2") == 0;
-}
-
-static void m2_power_enable(void)
-{
-	/* enable m.2 connector power */
-	set_pinvalue(m2_enable_power.gpio_name, m2_enable_power.label, 1);
-	udelay(4 * 100);
 }
 
 static bool board_is_advanced(void)
@@ -342,7 +213,7 @@ void set_board_info_env(void)
 		if (IS_ENABLED(CONFIG_TARGET_IOT2050_A53_PG1))
 			fdtfile = "ti/k3-am6548-iot2050-advanced.dtb";
 		else if(board_is_m2())
-			fdtfile = "ti/k3-am6548-iot2050-advanced-m2-bkey-usb3-ekey-pcie.dtb";
+			fdtfile = "ti/k3-am6548-iot2050-advanced-m2.dtb";
 		else
 			fdtfile = "ti/k3-am6548-iot2050-advanced-pg2.dtb";
 	} else {
@@ -358,14 +229,101 @@ void set_board_info_env(void)
 	env_save();
 }
 
-void update_m2_board_info_env(void)
+static void m2_overlay_prepare(void)
 {
-	const char *fdtfile;
+#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
+	const char *overlay_path;
+	void *overlay;
+	u64 loadaddr;
+	ofnode node;
+	int ret;
 
-	m2_power_enable();
-	set_m2_load_info(&fdtfile);
-	env_set("fdtfile", fdtfile);
-	env_save();
+	if (connector_mode == BKEY_PCIEX2_EKEY_NONE)
+		return;
+
+	if (connector_mode == BKEY_PCIE_EKEY_PCIE)
+		overlay_path = "/fit-images/bkey-ekey-pcie-overlay";
+	else
+		overlay_path = "/fit-images/bkey-usb3-overlay";
+
+	node = ofnode_path(overlay_path);
+	if (!ofnode_valid(node))
+		goto fit_error;
+
+	ret = ofnode_read_u64(node, "load", &loadaddr);
+	if (ret)
+		goto fit_error;
+
+	ret = ofnode_read_u32(node, "size", &connector_overlay_size);
+	if (ret)
+		goto fit_error;
+
+	overlay = map_sysmem(loadaddr, connector_overlay_size);
+
+	connector_overlay = malloc(connector_overlay_size);
+	if (!connector_overlay)
+		goto fit_error;
+
+	memcpy(connector_overlay, overlay, connector_overlay_size);
+	return;
+
+fit_error:
+	pr_err("M.2 device tree overlay %s not available,\n", overlay_path);
+#endif
+}
+
+static void m2_connector_setup(void)
+{
+	ulong m2_manual_config = env_get_ulong("m2_manual_config", 10,
+					       CONNECTOR_MODE_INVALID);
+	const char *mode_info = "";
+	struct m2_config_pins config_pins;
+	unsigned int n;
+
+	/* enable M.2 connector power */
+	set_pinvalue("gpio@601000_17", "P3V3_M2_EN", 1);
+	udelay(4 * 100);
+
+	m2_manual_config = env_get_ulong("m2_manual_config", 10,
+					 CONNECTOR_MODE_INVALID);
+	if (m2_manual_config < CONNECTOR_MODE_INVALID) {
+		mode_info = " [manual mode]";
+		connector_mode = m2_manual_config;
+	} else { /* auto detection */
+		for (n = 0; n < ARRAY_SIZE(config_pins.config); n++)
+			config_pins.config[n] =
+				get_pinvalue(m2_bkey_cfg_pin_info[n].gpio_name,
+					     m2_bkey_cfg_pin_info[n].label);
+		connector_mode = CONNECTOR_MODE_INVALID;
+		for (n = 0; n < ARRAY_SIZE(m2_config_table); n++) {
+			if (!memcmp(config_pins.config,
+				    m2_config_table[n].config_pins.config,
+				    sizeof(config_pins.config))) {
+				connector_mode = m2_config_table[n].mode;
+				break;
+			}
+		}
+		if (connector_mode == CONNECTOR_MODE_INVALID) {
+			mode_info = " [fallback, card unknown/unsupported]";
+			connector_mode = BKEY_USB30_EKEY_PCIE;
+		}
+	}
+
+	printf("M.2:   %s%s\n", m2_connector_mode_name[connector_mode],
+	       mode_info);
+
+	/* configure serdes mux */
+	set_pinvalue(serdes_mux_ctl_pin_info[0].gpio_name,
+		     serdes_mux_ctl_pin_info[0].label,
+		     serdes_mux_ctrl[connector_mode].ctrl_usb30_pcie0_lane0);
+	set_pinvalue(serdes_mux_ctl_pin_info[1].gpio_name,
+		     serdes_mux_ctl_pin_info[1].label,
+		     serdes_mux_ctrl[connector_mode].ctrl_pcie1_pcie0);
+	set_pinvalue(serdes_mux_ctl_pin_info[2].gpio_name,
+		     serdes_mux_ctl_pin_info[2].label,
+		     serdes_mux_ctrl[connector_mode].ctrl_usb30_pcie0_lane1);
+
+	m2_overlay_prepare();
 }
 
 int board_init(void)
@@ -465,9 +423,10 @@ int board_late_init(void)
 	/* change CTRL_MMR register to let serdes0 not output USB3.0 signals. */
 	writel(0x3, SERDES0_LANE_SELECT);
 
-	set_board_info_env();
 	if (board_is_m2())
-		update_m2_board_info_env();
+		m2_connector_setup();
+
+	set_board_info_env();
 
 	/* remove the eMMC if requested via button */
 	if (IS_ENABLED(CONFIG_IOT2050_BOOT_SWITCH) && board_is_advanced() &&
@@ -477,17 +436,30 @@ int board_late_init(void)
 	return 0;
 }
 
+#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
 static void m2_fdt_fixup(void *blob)
 {
-	int ret;
+	void *overlay;
+	int err;
 
-	ret = fdt_find_and_setprop(blob, "/", "compatible", fdt_fix_string,
-								strlen(fdt_fix_string) + 1, 0);
-	if (ret)
-		pr_err("%s: m.2 fdt fixup failed:%d\n", __func__, ret);
+	if (!connector_overlay)
+		return;
+
+	overlay = malloc(connector_overlay_size);
+	if (!overlay)
+		goto fixup_error;
+
+	memcpy(overlay, connector_overlay, connector_overlay_size);
+	err = fdt_overlay_apply_verbose(blob, overlay);
+	free(overlay);
+
+	if (!err)
+		return;
+
+fixup_error:
+	pr_err("Could not apply M.2 device tree overlay\n");
 }
 
-#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, struct bd_info *bd)
 {
 	int ret;
