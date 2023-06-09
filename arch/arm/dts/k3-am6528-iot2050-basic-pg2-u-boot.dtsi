@@ -9,3 +9,15 @@
 #include "k3-am65-iot2050-common-u-boot.dtsi"
 #include "k3-am65-iot2050-common-pg2-u-boot.dtsi"
 #include "k3-am65-iot2050-boot-image.dtsi"
+
+&smbios_system {
+	product = "SIMATIC IOT2050 Basic PG2";
+};
+
+&smbios_baseboard {
+	product = "SIMATIC IOT2050 Basic PG2";
+};
+
+&smbios_chassis {
+	product = "SIMATIC IOT2050 Basic PG2";
+};

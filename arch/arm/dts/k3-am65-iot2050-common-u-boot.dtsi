@@ -10,6 +10,28 @@
  */
 
 / {
+	sysinfo {
+		compatible = "u-boot,sysinfo-smbios";
+
+	smbios {
+		/* Type 1 table */
+		smbios_system: system {
+			manufacturer = "Siemens";
+			family = "SIMATIC IOT2050";
+		};
+
+		/* Type 2 table */
+		smbios_baseboard: baseboard {
+			manufacturer = "Siemens";
+		};
+
+		/* Type 3 table */
+		smbios_chassis: chassis {
+			manufacturer = "Siemens";
+		};
+	};
+};
+
 	aliases {
 		spi0 = &ospi0;
 	};
