@@ -387,6 +387,7 @@ static int smbios_write_type1(ulong *current, int handle,
 	struct smbios_type1 *t;
 	int len = sizeof(struct smbios_type1);
 	char *serial_str = env_get("serial#");
+	char uuid[sizeof(t->uuid)];
 
 	t = map_sysmem(*current, len);
 	memset(t, 0, sizeof(struct smbios_type1));
@@ -409,6 +410,9 @@ static int smbios_write_type1(ulong *current, int handle,
 						      SYSINFO_ID_SMBIOS_SYSTEM_SERIAL,
 						      NULL);
 	}
+	if (!sysinfo_get_str(ctx->dev, SYSINFO_ID_SMBIOS_SYSTEM_UUID,
+			     sizeof(uuid), uuid))
+		strncpy((char *)t->uuid, uuid, sizeof(t->uuid));
 	t->wakeup_type = SMBIOS_WAKEUP_TYPE_UNKNOWN;
 	t->sku_number = smbios_add_prop_si(ctx, "sku",
 					   SYSINFO_ID_SMBIOS_SYSTEM_SKU, NULL);
