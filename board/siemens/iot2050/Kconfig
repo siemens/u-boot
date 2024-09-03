@@ -21,6 +21,15 @@ config IOT2050_BOOT_SWITCH
 	bool "Disable eMMC boot via USER button (Advanced version only)"
 	default y
 
+config IOT2050_REQUIRE_DMA_ISOLATION
+	bool "Always configure DMA isolation into device tree (Advanced version only)"
+	help
+	  When enabled, DMA isolation is always enabled for Advanced devices in
+	  their device trees. This means that the environment variable
+	  'restricted_dma_pool_mb' can only control the size of restricted DMA
+	  pool, but it can no longer we used to disable this by setting it to
+	  0.
+
 config IOT2050_EMBED_OTPCMD
 	bool "Embed OTP programming data"
 	help

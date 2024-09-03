@@ -100,8 +100,8 @@ static enum m2_connector_mode connector_mode;
 static char iot2050_board_name[21];
 
 #if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
-static void *connector_overlay;
-static u32 connector_overlay_size;
+static void *connector_overlay, *dma_isolation_overlay;
+static u32 connector_overlay_size, dma_isolation_overlay_size;
 #endif
 
 static int get_pinvalue(const char *gpio_name, const char *label)
@@ -369,6 +369,47 @@ static void m2_connector_setup(void)
 	m2_overlay_prepare();
 }
 
+static __noreturn void dma_isolation_panic(void)
+{
+	panic("Cannot enforce DMA isolation as requested!\n");
+}
+
+static void dma_isolation_setup(void)
+{
+	u32 val[] = {0, cpu_to_fdt32(0xc0000000), 0, 0};
+	unsigned long pool_size;
+
+	pool_size = env_get_ulong("restricted_dma_pool_mb", 10, 0);
+
+	if (pool_size > 0) {
+		pool_size = round_up(pool_size, 32);
+		if (pool_size < 64)
+			pool_size = 64;
+		if (pool_size > 320)
+			pool_size = 320;
+	}
+	if (IS_ENABLED(CONFIG_IOT2050_REQUIRE_DMA_ISOLATION) && pool_size == 0)
+		pool_size = 64;
+
+	if (pool_size == 0)
+		return;
+
+	dma_isolation_overlay =
+		overlay_prepare("/fit-images/dma-isolation-overlay",
+				&dma_isolation_overlay_size);
+
+	if (IS_ENABLED(CONFIG_IOT2050_REQUIRE_DMA_ISOLATION) &&
+	    !dma_isolation_overlay)
+		dma_isolation_panic();
+
+	val[3] = cpu_to_fdt32(pool_size * 1024 *1024);
+	do_fixup_by_path(dma_isolation_overlay,
+			 "/fragment@0/__overlay__/restricted-dma@c0000000",
+			 "reg", val, sizeof(val), 0);
+
+	printf("Using restricted DMA pool, size %ld MB\n", pool_size);
+}
+
 int board_init(void)
 {
 	return 0;
@@ -497,6 +538,9 @@ int board_late_init(void)
 	if (board_is_m2())
 		m2_connector_setup();
 
+	if (board_is_advanced())
+		dma_isolation_setup();
+
 	set_board_info_env();
 
 	/* remove the eMMC if requested via button */
@@ -508,15 +552,15 @@ int board_late_init(void)
 }
 
 #if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
-static void variants_fdt_fixup(void *blob)
+int ft_board_setup(void *blob, struct bd_info *bd)
 {
 	void *overlay_copy = NULL;
 	void *fdt_copy = NULL;
 	u32 fdt_size;
 	int err;
 
-	if (!connector_overlay)
-		return;
+	if (!connector_overlay && !dma_isolation_overlay)
+		return 0;
 
 	/*
 	 * We need to work with temporary copies here because fdt_overlay_apply
@@ -530,34 +574,41 @@ static void variants_fdt_fixup(void *blob)
 
 	memcpy(fdt_copy, blob, fdt_size);
 
-	overlay_copy = malloc(connector_overlay_size);
+	overlay_copy = malloc(max(connector_overlay_size,
+				  dma_isolation_overlay_size));
 	if (!overlay_copy)
 		goto fixup_error;
 
-	memcpy(overlay_copy, connector_overlay, connector_overlay_size);
+	if (connector_overlay) {
+		memcpy(overlay_copy, connector_overlay,
+		       connector_overlay_size);
 
-	err = fdt_overlay_apply_verbose(fdt_copy, overlay_copy);
-	if (err)
-		goto fixup_error;
+		err = fdt_overlay_apply_verbose(fdt_copy, overlay_copy);
+		if (err)
+			goto fixup_error;
+	}
+	if (dma_isolation_overlay) {
+		memcpy(overlay_copy, dma_isolation_overlay,
+		       dma_isolation_overlay_size);
+
+		err = fdt_overlay_apply_verbose(fdt_copy, overlay_copy);
+		if (err)
+			goto fixup_error;
+	}
 
 	memcpy(blob, fdt_copy, fdt_size);
 
 cleanup:
 	free(fdt_copy);
 	free(overlay_copy);
-	return;
+	return 0;
 
 fixup_error:
 	pr_err("Could not apply device tree overlay\n");
+	if (dma_isolation_overlay &&
+	    IS_ENABLED(CONFIG_IOT2050_REQUIRE_DMA_ISOLATION))
+		dma_isolation_panic();
 	goto cleanup;
-}
-
-int ft_board_setup(void *blob, struct bd_info *bd)
-{
-	if (board_is_m2())
-		variants_fdt_fixup(blob);
-
-	return 0;
 }
 #endif
 
