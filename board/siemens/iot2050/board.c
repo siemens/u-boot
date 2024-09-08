@@ -267,12 +267,13 @@ void set_board_info_env(void)
 	env_save();
 }
 
-static void do_overlay_prepare(const char *overlay_path)
+static void *overlay_prepare(const char *overlay_path, u32 *poverlay_size)
 {
 #if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
-	void *overlay;
+	void *overlay, *result;
 	u64 loadaddr;
 	ofnode node;
+	u32 size;
 	int ret;
 
 	node = ofnode_path(overlay_path);
@@ -283,21 +284,24 @@ static void do_overlay_prepare(const char *overlay_path)
 	if (ret)
 		goto fit_error;
 
-	ret = ofnode_read_u32(node, "size", &connector_overlay_size);
+	ret = ofnode_read_u32(node, "size", &size);
 	if (ret)
 		goto fit_error;
 
-	overlay = map_sysmem(loadaddr, connector_overlay_size);
+	overlay = map_sysmem(loadaddr, size);
 
-	connector_overlay = malloc(connector_overlay_size);
-	if (!connector_overlay)
+	result = malloc(size);
+	if (!result)
 		goto fit_error;
 
-	memcpy(connector_overlay, overlay, connector_overlay_size);
-	return;
+	memcpy(result, overlay, size);
+	*poverlay_size = size;
+
+	return result;
 
 fit_error:
-	pr_err("M.2 device tree overlay %s not available.\n", overlay_path);
+	pr_err("Device tree overlay %s not available.\n", overlay_path);
+	return NULL;
 #endif
 }
 
@@ -313,7 +317,8 @@ static void m2_overlay_prepare(void)
 	else
 		overlay_path = "/fit-images/bkey-usb3-overlay";
 
-	do_overlay_prepare(overlay_path);
+	connector_overlay = overlay_prepare(overlay_path,
+					    &connector_overlay_size);
 }
 
 static void m2_connector_setup(void)
